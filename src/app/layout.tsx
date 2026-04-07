@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { CookieConsent } from "@/components/cookie-consent";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { MapSection } from "@/components/layout/map-section";
@@ -63,6 +64,7 @@ export default function RootLayout({
             {`
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
+              gtag('consent', 'default', { analytics_storage: 'denied', ad_storage: 'denied' });
               gtag('js', new Date());
               gtag('config', '${gaId}', { page_path: window.location.pathname });
             `}
@@ -76,6 +78,7 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <PostHogPageView />
           </Suspense>
+          <CookieConsent />
           <Header />
           <main>{children}</main>
           <MapSection />

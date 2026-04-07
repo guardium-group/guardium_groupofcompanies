@@ -15,7 +15,13 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         maskAllInputs: true,
       },
       capture_heatmaps: true,
+      opt_out_capturing_by_default: true, // respect consent — opt in only after user accepts
     });
+
+    // Restore consent for returning visitors who already accepted
+    if (localStorage.getItem("ggc-cookie-consent") === "accepted") {
+      posthog.opt_in_capturing();
+    }
   }, []);
 
   return <PHProvider client={posthog}>{children}</PHProvider>;
