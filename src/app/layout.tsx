@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Barlow, Mulish, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { CookieConsent } from "@/components/cookie-consent";
@@ -10,9 +10,16 @@ import { PostHogProvider } from "@/components/posthog-provider";
 import { PostHogPageView } from "@/components/posthog-pageview";
 import { Suspense } from "react";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const barlow = Barlow({
+  variable: "--font-barlow",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+});
+
+const mulish = Mulish({
+  variable: "--font-mulish",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -72,7 +79,7 @@ export default function RootLayout({
         </>
       )}
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${barlow.variable} ${mulish.variable} ${geistMono.variable} antialiased`}
       >
         <PostHogProvider>
           <Suspense fallback={null}>

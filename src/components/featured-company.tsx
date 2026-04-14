@@ -50,7 +50,7 @@ export function FeaturedCompany({
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4 }}
-                className=" bg-orange-500/20 text-orange-500 font-semibold text-sm mb-3 rounded-full py-2 px-4 w-fit text-center"
+                className="bg-primary/10 text-primary font-semibold text-sm mb-3 rounded-full py-2 px-4 w-fit text-center"
               >
                 {sectionLabel}
               </motion.p>
@@ -61,7 +61,7 @@ export function FeaturedCompany({
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="text-[28px] sm:text-[36px] lg:text-[42px] font-bold text-gray-900 leading-[1.15] tracking-tight mb-8 lg:mb-10"
+                className="text-[28px] sm:text-[36px] lg:text-[42px] font-display font-bold text-gray-900 leading-[1.15] tracking-tight mb-8 lg:mb-10"
               >
                 {heading}
               </motion.h2>
@@ -75,12 +75,12 @@ export function FeaturedCompany({
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.4, delay: 0.15 + index * 0.1 }}
-                    className="bg-[#f7f7f7]/30 rounded-2xl border border-orange-200/50 p-3 sm:p-5"
+                    className="bg-secondary/50 rounded-2xl border border-border p-3 sm:p-5"
                   >
                     <div className="flex items-center gap-4">
                       <div className="shrink-0">
                         <feature.icon
-                          className="w-6 h-6 sm:w-6 sm:h-6 text-orange-500"
+                          className="w-6 h-6 sm:w-6 sm:h-6 text-primary"
                           strokeWidth={1.5}
                         />
                       </div>
@@ -125,11 +125,11 @@ export function FeaturedCompany({
                     href={ctaLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-orange-600 hover:bg-gray-800 text-white pl-4 pr-1.5 py-1.5 rounded-full text-sm font-medium transition-colors mb-3"
+                    className="inline-flex items-center gap-2 bg-primary hover:bg-foreground text-white pl-4 pr-1.5 py-1.5 rounded-full text-sm font-medium transition-colors mb-3"
                   >
                     Visit Website
                     <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                      <ArrowUpRight className="w-3.5 h-3.5 text-orange-600" />
+                      <ArrowUpRight className="w-3.5 h-3.5 text-primary" />
                     </span>
                   </a>
 

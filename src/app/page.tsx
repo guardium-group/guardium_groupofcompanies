@@ -204,7 +204,7 @@ const faqs = [
 // Animation variants
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
 };
 
 const staggerContainer = {
@@ -217,7 +217,7 @@ const staggerContainer = {
 
 const scaleIn = {
   hidden: { opacity: 0, scale: 0.9 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: "easeOut" } },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: "easeOut" as const } },
 };
 
 export default function HomePage() {
@@ -265,7 +265,7 @@ export default function HomePage() {
             {/* <span className="inline-block text-primary font-semibold text-sm mb-4 tracking-wide">
               Why Choose Us
             </span> */}
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white mb-3">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight text-white mb-3">
               The Guardium Advantage
             </h2>
             <p className="text-white/70 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed">
@@ -286,16 +286,20 @@ export default function HomePage() {
               { icon: Globe, title: "Local Presence", desc: "Deep roots in Alberta communities" },
               { icon: Handshake, title: "Customer Focus", desc: "Your success is our priority" },
             ].map((item) => (
-              <motion.div key={item.title} variants={fadeInUp} className="text-center group bg-white/10  shadow-sm  rounded-3xl py-8 px-4">
-                <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-105 transition-transform duration-300 shadow-lg border-[#ce0000] border">
-                  <item.icon className="h-6 w-6 text-[#ce0000]" strokeWidth={2} />
+              <motion.div key={item.title} variants={fadeInUp} className="group bg-white/10 shadow-sm rounded-3xl py-8 px-6">
+                <div className="flex items-start gap-4">
+                  <div className="shrink-0 w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mt-0.5 group-hover:bg-white/30 transition-colors duration-300">
+                    <item.icon className="h-5 w-5 text-white" strokeWidth={1.75} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-1">
+                      {item.title}
+                    </h3>
+                    <p className="text-white/70 text-sm leading-relaxed">
+                      {item.desc}
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold text-white">
-                  {item.title}
-                </h3>
-                <p className="text-white/70 text-sm leading-relaxed">
-                  {item.desc}
-                </p>
               </motion.div>
             ))}
           </motion.div>
@@ -304,7 +308,7 @@ export default function HomePage() {
 
       {/* Featured Company - Cliff's Towing */}
       <FeaturedCompany
-        backgroundImage="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=800&q=80"
+        backgroundImage="/images/hero-1.jpg"
         sectionLabel="Cliff's Towing"
         heading="Big or Small, We Tow them all"
         description="When the unexpected happens, count on us to tow you through. For over 70 years, Cliffs has been Edmonton’s cornerstone of transport, recovery, and towing services."
@@ -334,7 +338,7 @@ export default function HomePage() {
 
       {/* Featured Company - YEG Courier */}
       <FeaturedCompany
-        backgroundImage="https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=800&q=80"
+        backgroundImage="/images/featured/courier.png"
         sectionLabel="YEG Courier"
         heading="Edmonton's Go To Courier & Delivery Service"
         description="From urgent documents to large packages, we ensure your items arrive safely and on time."
@@ -378,7 +382,7 @@ export default function HomePage() {
               <Badge variant="accent" className="mb-4">
                 FAQ
               </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4 tracking-tight text-gray-900">
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4 tracking-tight text-gray-900">
                 Frequently Asked Questions
               </h2>
               <p className="text-gray-600">

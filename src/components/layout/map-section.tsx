@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 export function MapSection() {
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
   };
 
   // Edmonton office location - Guardium Group headquarters (4918 Roper Rd NW, Edmonton, AB T6B3T7)
@@ -14,7 +14,7 @@ export function MapSection() {
   return (
     <motion.section
       initial="visible"
-      animate={{ opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }}
+      animate={{ opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } }}
       viewport={{ once: true, margin: "-100px" }}
       className="w-full"
       style={{ height: "450px" }}

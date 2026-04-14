@@ -77,7 +77,7 @@ export function CompaniesCarousel({
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-mono font-bold mb-2 text-gray-900 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold mb-2 text-gray-900 tracking-tight">
             {title} <span className="text-[#ce0000]">{highlightText}</span>
           </h2>
           <p className="text-gray-500 max-w-3xl mx-auto text-sm sm:text-[15px] leading-relaxed px-4">
@@ -117,10 +117,10 @@ export function CompaniesCarousel({
                     </div>
 
                     {/* Content */}
-                    <h3 className="text-base sm:text-[17px] font-bold tracking-tight font-mono text-gray-900 mb-2">
+                    <h3 className="text-base sm:text-[17px] font-bold tracking-tight text-gray-900 mb-2">
                       {company.name}
                     </h3>
-                    <p className="text-xs sm:text-[13px] text-gray-500 leading-relaxed font-mono mb-4 flex-grow">
+                    <p className="text-xs sm:text-[13px] text-gray-500 leading-relaxed mb-4 flex-grow">
                       {company.description}
                     </p>
 
@@ -142,7 +142,7 @@ export function CompaniesCarousel({
             <button
               onClick={handlePrev}
               disabled={currentIndex === 0}
-              className="w-10 h-10 sm:w-9 sm:h-9 rounded-full border border-blue-600 flex items-center justify-center text-blue-600 hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="w-10 h-10 sm:w-9 sm:h-9 rounded-full border border-primary flex items-center justify-center text-primary hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               aria-label="Previous"
             >
               <ChevronLeft className="w-5 h-5 sm:w-4 sm:h-4" />
@@ -155,7 +155,7 @@ export function CompaniesCarousel({
                   key={idx}
                   onClick={() => setCurrentIndex(Math.min(idx, maxIndex))}
                   className={`w-2 h-2 rounded-full transition-all ${
-                    idx === currentIndex ? "bg-blue-500 w-4" : "bg-gray-300"
+                    idx === currentIndex ? "bg-primary w-4" : "bg-gray-300"
                   }`}
                   aria-label={`Go to slide ${idx + 1}`}
                 />
@@ -165,7 +165,7 @@ export function CompaniesCarousel({
             <button
               onClick={handleNext}
               disabled={currentIndex >= maxIndex}
-              className="w-10 h-10 sm:w-9 sm:h-9 rounded-full border border-blue-600 bg-blue-500 flex items-center justify-center text-white hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="w-10 h-10 sm:w-9 sm:h-9 rounded-full border border-primary bg-primary flex items-center justify-center text-white hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               aria-label="Next"
             >
               <ChevronRight className="w-5 h-5 sm:w-4 sm:h-4" />

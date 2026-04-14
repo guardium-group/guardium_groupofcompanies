@@ -179,7 +179,7 @@ export function Header() {
         className="fixed top-8 inset-x-0 z-50"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
+        transition={{ duration: 0.5, ease: "easeOut" as const }}
       >
         <div className="container mx-auto px-4 py-4">
           <motion.div

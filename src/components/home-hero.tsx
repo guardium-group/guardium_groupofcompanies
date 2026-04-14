@@ -48,7 +48,7 @@ function GlassmorphicYouTubePlayer({ youtubeUrl }: { youtubeUrl: string }) {
     <motion.div
       initial={{ opacity: 0, y: 40, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: 0.5, duration: 0.6, ease: "easeOut" }}
+      transition={{ delay: 0.5, duration: 0.6, ease: "easeOut" as const }}
       className="absolute bottom-8 right-8 z-20 hidden lg:block"
     >
       {/* Glassmorphism Container */}
@@ -101,7 +101,7 @@ export function HomeHero({
   const current = slides[activeIndex];
 
   return (
-    <section className="relative min-h-[100svh] sm:min-h-[650px] md:min-h-[700px] xl:h-[775px] overflow-hidden text-white">
+    <section className="relative min-h-[100svh] sm:min-h-[700px] md:min-h-[750px] xl:h-[775px] overflow-hidden text-white">
       {/* Background Images with Crossfade */}
       <div className="absolute inset-0">
         {slides.map((slide, index) => (
@@ -125,7 +125,7 @@ export function HomeHero({
       </div>
 
       {/* Overlay */}
-      <div className="absolute inset-0 bg-linear-to-br from-black via-black/60 to-gray-900/70" />
+      <div className="absolute inset-0 bg-linear-to-br from-black via-black/30 to-gray-900/20" />
 
       {/* Content */}
       <div className="container mx-auto px-4 relative z-10 h-full min-h-[100svh] sm:min-h-[650px] md:min-h-[700px] flex items-center">
@@ -137,10 +137,10 @@ export function HomeHero({
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
+                transition={{ duration: 0.6, ease: "easeOut" as const }}
               >
                 <motion.h1
-                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[80px] font-bold mb-2 sm:mb-1 leading-tight tracking-tight text-white"
+                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[80px] font-display font-bold mb-2 sm:mb-1 leading-tight tracking-tight text-white"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1, duration: 0.5 }}

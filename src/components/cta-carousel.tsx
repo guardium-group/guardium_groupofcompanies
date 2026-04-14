@@ -92,7 +92,7 @@ export function CTACarousel({
               transition={{ duration: 0.5 }}
               className="space-y-2 sm:space-y-2"
             >
-              <h2 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white tracking-tight">
+              <h2 className="text-2xl sm:text-3xl lg:text-5xl font-display font-bold text-white tracking-tight">
                 {currentSlide.headline}
               </h2>
               <p className="text-white/70 text-base sm:text-lg max-w-xl mx-auto">
@@ -102,7 +102,7 @@ export function CTACarousel({
                 {currentSlide.ctaType === "phone" ? (
                   <Button
                     size="lg"
-                    className="rounded-full bg-blue-600 text-white hover:bg-white/90"
+                    className="rounded-full bg-primary text-white hover:bg-white hover:text-primary"
                     asChild
                   >
                     <a href={currentSlide.ctaLink}>
@@ -113,7 +113,7 @@ export function CTACarousel({
                 ) : (
                   <Button
                     size="lg"
-                    className="rounded-full bg-blue-600 text-white hover:bg-white/90"
+                    className="rounded-full bg-primary text-white hover:bg-white hover:text-primary"
                     asChild
                   >
                     <Link href={currentSlide.ctaLink}>
