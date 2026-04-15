@@ -19,7 +19,7 @@ export function BreadcrumbHero({
   breadcrumbs,
 }: BreadcrumbHeroProps) {
   return (
-    <section className="relative h-[200px] sm:h-[240px] md:h-[300px] lg:h-[340px] overflow-hidden mt-0">
+    <section className="relative h-[280px] sm:h-[300px] md:h-[340px] lg:h-[380px] overflow-hidden mt-28">
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, type PanInfo } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -86,7 +86,13 @@ export function CompaniesCarousel({
         </div>
 
         {/* Carousel */}
-        <div className="relative">
+        <motion.div
+          className="relative"
+          onPanEnd={(_e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+            if (info.offset.x < -50) handleNext();
+            else if (info.offset.x > 50) handlePrev();
+          }}
+        >
           <div className="overflow-hidden">
             <motion.div
               className="flex"
@@ -171,7 +177,7 @@ export function CompaniesCarousel({
               <ChevronRight className="w-5 h-5 sm:w-4 sm:h-4" />
             </button>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

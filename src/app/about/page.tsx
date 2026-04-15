@@ -77,7 +77,6 @@ const industries = [
 
 const serviceAreas = {
   local: ["Edmonton", "Sherwood Park", "Spruce Grove", "Beaumont", "Devon", "Morinville", "Leduc"],
-  global: ["Canada", "United States", "United Kingdom", "India"],
 };
 
 const fadeInUp = {
@@ -345,14 +344,14 @@ export default function AboutPage() {
               Where We Operate
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4 tracking-tight text-gray-900">
-              Serving Local & Global Markets
+              Where We Operate
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              From our Edmonton headquarters, we serve customers locally and internationally.
+              From our Edmonton headquarters, we serve customers across Alberta and beyond.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="max-w-2xl mx-auto">
             <motion.div
               initial="hidden"
               whileInView="visible"
@@ -368,31 +367,6 @@ export default function AboutPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 {serviceAreas.local.map((area) => (
-                  <span
-                    key={area}
-                    className="px-4 py-2 bg-white rounded-full text-sm text-gray-700 border border-gray-200"
-                  >
-                    {area}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeInUp}
-              className="bg-gray-50 rounded-2xl p-6 sm:p-8"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Globe className="h-5 w-5 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900">Global Presence</h3>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {serviceAreas.global.map((area) => (
                   <span
                     key={area}
                     className="px-4 py-2 bg-white rounded-full text-sm text-gray-700 border border-gray-200"

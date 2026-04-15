@@ -203,7 +203,7 @@ const companiesData: Record<string, {
       { name: "Mark H.", role: "E-commerce Owner", company: "Online Store", text: "Scaling from 100 to 10,000 orders monthly was seamless with Guardium's fulfillment services.", rating: 5 }
     ],
     faqs: [
-      { question: "What areas do you service?", answer: "We provide logistics services across all of Canada and the United States, with partnerships extending globally." },
+      { question: "What areas do you service?", answer: "We provide logistics services across all of Canada and the United States." },
       { question: "Can you handle hazardous materials?", answer: "Yes, we have certified drivers and equipment for transporting hazardous materials in compliance with all regulations." },
       { question: "Do you offer expedited shipping?", answer: "Absolutely. We offer same-day, next-day, and time-critical delivery options for urgent shipments." },
       { question: "How do I track my shipments?", answer: "All shipments include real-time GPS tracking accessible through our online portal or mobile app." },

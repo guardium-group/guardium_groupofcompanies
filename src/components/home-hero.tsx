@@ -140,7 +140,7 @@ export function HomeHero({
                 transition={{ duration: 0.6, ease: "easeOut" as const }}
               >
                 <motion.h1
-                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[80px] font-display font-bold mb-2 sm:mb-1 leading-tight tracking-tight text-white"
+                  className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl xl:text-[80px] font-display font-bold mb-2 sm:mb-1 leading-tight tracking-tight text-white"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1, duration: 0.5 }}

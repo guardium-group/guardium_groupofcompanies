@@ -13,6 +13,7 @@ import {
   Phone,
   Tag,
   Newspaper,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Menu, MenuItem, HoveredLink } from "@/components/ui/navbar-menu";
@@ -107,6 +108,7 @@ const companies = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileCompaniesOpen, setMobileCompaniesOpen] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
 
@@ -330,26 +332,38 @@ export function Header() {
                 </Link>
 
                 <div className="space-y-2">
-                  <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Our Companies</p>
-                  <Link
-                    href="/companies"
-                    className="block py-2 pl-4 text-primary font-semibold hover:text-primary/80 transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
+                  <button
+                    className="flex items-center justify-between w-full text-sm font-bold text-gray-500 uppercase tracking-wider py-1"
+                    onClick={() => setMobileCompaniesOpen((v) => !v)}
                   >
-                    View All Companies
-                  </Link>
-                  {companies.map((company) => (
-                    <a
-                      key={company.name}
-                      href={company.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="block py-2 pl-4 text-gray-600 hover:text-primary transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {company.name}
-                    </a>
-                  ))}
+                    Our Companies
+                    <ChevronRight
+                      className={`h-4 w-4 transition-transform duration-200 ${mobileCompaniesOpen ? "rotate-90" : ""}`}
+                    />
+                  </button>
+                  {mobileCompaniesOpen && (
+                    <>
+                      <Link
+                        href="/companies"
+                        className="block py-2 pl-4 text-primary font-semibold hover:text-primary/80 transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        View All Companies
+                      </Link>
+                      {companies.map((company) => (
+                        <a
+                          key={company.name}
+                          href={company.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block py-2 pl-4 text-gray-600 hover:text-primary transition-colors"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          {company.name}
+                        </a>
+                      ))}
+                    </>
+                  )}
                 </div>
 
                 <Link
