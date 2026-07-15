@@ -1,7 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
-import { type ContactFormData } from "@/lib/validations/contact";
+import { contactSchema, type ContactFormData } from "@/lib/validations/contact";
 import {
   checkRateLimit,
   getRateLimitKey,
@@ -12,6 +12,8 @@ import {
   validateFormTiming,
   performSpamCheck,
   sanitizeFormData,
+  escapeHtml,
+  generateFormToken,
 } from "@/lib/security/spam-detection";
 import { verifyTurnstileToken } from "@/components/ui/turnstile";
 
@@ -34,22 +36,39 @@ export interface ContactResponse {
 async function getClientIP(): Promise<string> {
   const headersList = await headers();
 
-  const forwardedFor = headersList.get("x-forwarded-for");
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0].trim();
-  }
-
-  const realIP = headersList.get("x-real-ip");
-  if (realIP) {
-    return realIP;
-  }
-
+  // Prefer headers set by a trusted edge/proxy that can't be overwritten by
+  // the client. cf-connecting-ip is set by Cloudflare's edge itself.
   const cfConnectingIP = headersList.get("cf-connecting-ip");
   if (cfConnectingIP) {
     return cfConnectingIP;
   }
 
+  // x-real-ip is typically set by a single trusted reverse proxy (nginx, etc.)
+  const realIP = headersList.get("x-real-ip");
+  if (realIP) {
+    return realIP;
+  }
+
+  // x-forwarded-for is a comma-separated hop chain where each proxy appends
+  // to the end. The leftmost entry is client-supplied and trivially spoofable
+  // (a client can send any value there); the rightmost entry is the one added
+  // by the last (closest, most trusted) hop before reaching this server.
+  const forwardedFor = headersList.get("x-forwarded-for");
+  if (forwardedFor) {
+    const hops = forwardedFor.split(",").map((ip) => ip.trim());
+    return hops[hops.length - 1];
+  }
+
   return "unknown";
+}
+
+/**
+ * Issue a server-signed anti-bot token. Must be called from the client via
+ * this server action (rather than generated locally) so the timestamp it
+ * signs is one the server actually issued, not one the client made up.
+ */
+export async function getFormToken(): Promise<{ token: string; timestamp: number }> {
+  return generateFormToken();
 }
 
 function logSecurityEvent(
@@ -126,7 +145,24 @@ export async function submitContact(
     const data = sanitizeFormData(rawData);
 
     // ==========================================
-    // LAYER 5: Rate Limiting by Email
+    // LAYER 5: Schema Validation
+    // ==========================================
+    const parsed = contactSchema.safeParse(data);
+    if (!parsed.success) {
+      logSecurityEvent("VALIDATION_FAILED", {
+        ip: clientIP,
+        form: "contact",
+        issues: parsed.error.issues.map((issue) => issue.message),
+      });
+      return {
+        success: false,
+        message: parsed.error.issues[0]?.message || "Please check your input and try again.",
+        code: "VALIDATION_ERROR",
+      };
+    }
+
+    // ==========================================
+    // LAYER 6: Rate Limiting by Email
     // ==========================================
     const emailRateLimit = checkRateLimit(
       getRateLimitKey("contact_email", data.email.toLowerCase()),
@@ -147,7 +183,7 @@ export async function submitContact(
     }
 
     // ==========================================
-    // LAYER 6: Turnstile CAPTCHA Verification
+    // LAYER 7: Turnstile CAPTCHA Verification
     // ==========================================
     if (process.env.TURNSTILE_SECRET_KEY && data._turnstileToken) {
       const turnstileResult = await verifyTurnstileToken(data._turnstileToken);
@@ -166,7 +202,7 @@ export async function submitContact(
     }
 
     // ==========================================
-    // LAYER 7: Spam Content Analysis
+    // LAYER 8: Spam Content Analysis
     // ==========================================
     const spamCheck = performSpamCheck({
       name: data.name,
@@ -195,7 +231,7 @@ export async function submitContact(
     }
 
     // ==========================================
-    // LAYER 8: Environment Check
+    // LAYER 9: Environment Check
     // ==========================================
     if (!process.env.BREVO_API_KEY) {
       console.error("BREVO_API_KEY not configured");
@@ -215,6 +251,14 @@ export async function submitContact(
       timeStyle: "short",
     });
 
+    // Escape everything that gets interpolated into htmlContent below —
+    // sanitizeFormData() strips control characters but does not HTML-escape,
+    // so this is the only guard against HTML/script injection into the
+    // outbound email.
+    const safeName = escapeHtml(data.name);
+    const safeEmail = escapeHtml(data.email);
+    const safeMessage = escapeHtml(data.message).replace(/\n/g, "<br>");
+
     const servicesHtml = data.services && data.services.length > 0
       ? `
         <tr>
@@ -222,7 +266,7 @@ export async function submitContact(
             <strong style="color: #6b7280;">Services Interested:</strong>
           </td>
           <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
-            ${data.services.join(", ")}
+            ${data.services.map(escapeHtml).join(", ")}
           </td>
         </tr>
       `
@@ -257,7 +301,7 @@ export async function submitContact(
                   <strong style="color: #6b7280;">Name:</strong>
                 </td>
                 <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
-                  ${data.name}
+                  ${safeName}
                 </td>
               </tr>
               <tr>
@@ -265,7 +309,7 @@ export async function submitContact(
                   <strong style="color: #6b7280;">Email:</strong>
                 </td>
                 <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
-                  <a href="mailto:${data.email}" style="color: #511010;">${data.email}</a>
+                  <a href="mailto:${safeEmail}" style="color: #511010;">${safeEmail}</a>
                 </td>
               </tr>
               ${servicesHtml}
@@ -282,7 +326,7 @@ export async function submitContact(
             <div style="margin-top: 24px;">
               <strong style="color: #6b7280;">Message:</strong>
               <div style="background-color: white; padding: 16px; border-radius: 8px; margin-top: 8px; border: 1px solid #e5e7eb;">
-                ${data.message.replace(/\n/g, "<br>")}
+                ${safeMessage}
               </div>
             </div>
           </div>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { SITE_URL } from "@/lib/site-config";
 
 interface BreadcrumbItem {
   label: string;
@@ -12,18 +13,35 @@ interface BreadcrumbItem {
 interface BreadcrumbHeroProps {
   title: string;
   breadcrumbs: BreadcrumbItem[];
+  image?: string;
 }
 
 export function BreadcrumbHero({
   title,
   breadcrumbs,
+  image = "/images/hero/heroBg2.png",
 }: BreadcrumbHeroProps) {
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbs.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.label,
+      ...(item.href ? { item: `${SITE_URL}${item.href}` } : {}),
+    })),
+  };
+
   return (
+    <>
+    <script type="application/ld+json">
+      {JSON.stringify(breadcrumbJsonLd)}
+    </script>
     <section className="relative h-[280px] sm:h-[300px] md:h-[340px] lg:h-[380px] overflow-hidden mt-28">
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image
-          src="/images/hero/heroBg1.png"
+          src={image}
           alt=""
           fill
           className="object-cover scale-105"
@@ -81,8 +99,9 @@ export function BreadcrumbHero({
           {title}
         </motion.h1>
 
-       
+
       </div>
     </section>
+    </>
   );
 }

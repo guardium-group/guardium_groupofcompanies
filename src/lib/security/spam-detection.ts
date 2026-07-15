@@ -2,11 +2,23 @@
  * Multi-layer spam detection system
  */
 
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+
 // Minimum time (ms) for a human to fill out the form
 const MIN_SUBMISSION_TIME = 5000; // 5 seconds
 
 // Maximum time (ms) before form token expires
 const MAX_SUBMISSION_TIME = 30 * 60 * 1000; // 30 minutes
+
+// Secret used to sign the anti-bot timing token so it can't be forged by a
+// client sending an arbitrary timestamp. Falls back to a per-process random
+// secret when FORM_TOKEN_SECRET isn't set — tokens just won't survive a
+// server restart, matching the existing rate-limiter's in-memory tradeoff.
+const FORM_TOKEN_SECRET = process.env.FORM_TOKEN_SECRET || randomBytes(32).toString("hex");
+
+function signTimestamp(timestamp: number): string {
+  return createHmac("sha256", FORM_TOKEN_SECRET).update(String(timestamp)).digest("hex");
+}
 
 // Suspicious patterns in text
 const SPAM_PATTERNS = [
@@ -44,17 +56,21 @@ export interface FormSecurityData {
 }
 
 /**
- * Generate a secure form token
+ * Generate a server-signed form token. Must be called server-side (e.g. from
+ * a server action) so the timestamp it signs is trustworthy — a client can
+ * still claim any timestamp it wants, but it can no longer produce a
+ * signature that validates against a timestamp the server didn't actually
+ * hand out.
  */
 export function generateFormToken(): { token: string; timestamp: number } {
   const timestamp = Date.now();
-  // Simple token - in production use crypto for signing
-  const token = Buffer.from(`${timestamp}:${Math.random().toString(36)}`).toString("base64");
-  return { token, timestamp };
+  return { token: signTimestamp(timestamp), timestamp };
 }
 
 /**
- * Validate form token and timing
+ * Validate form token and timing. Confirms the token is a valid signature
+ * for the given timestamp (not just "present") before applying the timing
+ * window checks.
  */
 export function validateFormTiming(
   token: string | undefined,
@@ -62,6 +78,12 @@ export function validateFormTiming(
 ): { valid: boolean; reason?: string } {
   if (!token || !timestamp) {
     return { valid: false, reason: "Missing security token" };
+  }
+
+  const expected = Buffer.from(signTimestamp(timestamp));
+  const actual = Buffer.from(token);
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+    return { valid: false, reason: "Invalid security token" };
   }
 
   const now = Date.now();
@@ -198,6 +220,20 @@ export function sanitizeInput(input: string): string {
     .replace(/\s+/g, " ")
     // Limit length
     .slice(0, 5000);
+}
+
+/**
+ * Escape a string for safe interpolation into HTML content (e.g. outbound
+ * transactional emails). Sanitizing/trimming input is not the same as
+ * escaping it — this must be applied at the point of HTML interpolation.
+ */
+export function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 /**

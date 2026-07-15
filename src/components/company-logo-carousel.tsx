@@ -33,6 +33,7 @@ function CompanyLogo({ company }: { company: Company }) {
         width={160}
         height={48}
         className="h-10 md:h-14 w-auto object-contain"
+        style={{ width: "auto" }}
         onError={() => setImgError(true)}
       />
     );

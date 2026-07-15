@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { ArrowRight, Phone, Play } from "lucide-react";
+import { ArrowRight, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,6 +13,9 @@ export interface HeroSlide {
   title: string;
   highlight: string;
   description: string;
+  ctaText?: string;
+  ctaLink?: string;
+  ctaExternal?: boolean;
 }
 
 interface HomeHeroProps {
@@ -54,7 +57,7 @@ function GlassmorphicYouTubePlayer({ youtubeUrl }: { youtubeUrl: string }) {
       {/* Glassmorphism Container */}
       <div className="relative rounded-xl overflow-hidden backdrop-blur-xl bg-white/10 border border-gray-500/10 shadow-3xl">
         {/* YouTube Embed Container */}
-        <div className="relative lg:w-100 xl:h-50 w-80 h-40 overflow-hidden rounded-t-xl">
+        <div className="relative lg:w-100 xl:h-56 w-80 h-40 overflow-hidden rounded-t-xl">
           <iframe
             src={getEmbedUrl(youtubeUrl)}
             title="Guardium Group YouTube Video"
@@ -64,19 +67,9 @@ function GlassmorphicYouTubePlayer({ youtubeUrl }: { youtubeUrl: string }) {
           />
         </div>
 
-        {/* Label Bar */}
-        <div className="px-4 py-3 flex items-center justify-between bg-black">
-          <div className="flex items-center gap-2">
-            <Play className="w-4 h-4 text-white" fill="white" />
-            <span className="text-xs text-white/80 font-sm">
-              Featured Playlist
-            </span>
-          </div>
-          <div className="text-xs text-white/80 font-sm">Guardium Group</div>
-        </div>
+        
 
-        {/* iOS-style Home Indicator */}
-        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-26 h-1 rounded-full bg-white/30" />
+        
       </div>
     </motion.div>
   );
@@ -99,9 +92,12 @@ export function HomeHero({
 
   if (!slides.length) return null;
   const current = slides[activeIndex];
+  const ctaText = current.ctaText ?? "Discover All Industries";
+  const ctaLink = current.ctaLink ?? "/contact";
+  const ctaExternal = current.ctaExternal ?? false;
 
   return (
-    <section className="relative min-h-[100svh] sm:min-h-[700px] md:min-h-[750px] xl:h-[775px] overflow-hidden text-white">
+    <section className="relative min-h-svh sm:min-h-[700px] md:min-h-[750px] xl:h-[825px] overflow-hidden text-white">
       {/* Background Images with Crossfade */}
       <div className="absolute inset-0">
         {slides.map((slide, index) => (
@@ -125,10 +121,10 @@ export function HomeHero({
       </div>
 
       {/* Overlay */}
-      <div className="absolute inset-0 bg-linear-to-br from-black via-black/30 to-gray-900/20" />
+      <div className="absolute inset-0 bg-linear-to-br from-black via-black/40 to-gray-900/20" />
 
       {/* Content */}
-      <div className="container mx-auto px-4 relative z-10 h-full min-h-[100svh] sm:min-h-[650px] md:min-h-[700px] flex items-center">
+      <div className="container mx-auto px-4 relative z-10 h-full min-h-svh sm:min-h-[650px] md:min-h-[700px] flex items-center">
         <div className="flex h-full w-full items-center pb-16 sm:pb-20 pt-24 sm:pt-28">
           <div className="max-w-7xl border-l-2 sm:border-l pl-4 sm:pl-8 border-white/50 pb-4">
             <AnimatePresence mode="wait">
@@ -140,7 +136,7 @@ export function HomeHero({
                 transition={{ duration: 0.6, ease: "easeOut" as const }}
               >
                 <motion.h1
-                  className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl xl:text-[80px] font-display font-bold mb-2 sm:mb-1 leading-tight tracking-tight text-white"
+                  className="text-5xl sm:text-5xl md:text-5xl lg:text-6xl xl:text-[70px] font-display font-bold mb-4  leading-none tracking-tight text-white"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1, duration: 0.5 }}
@@ -150,7 +146,7 @@ export function HomeHero({
                 </motion.h1>
 
                 <motion.p
-                  className="text-sm sm:text-base md:text-lg text-white/90 mb-6 sm:mb-8 max-w-4xl leading-relaxed"
+                  className="text-sm sm:text-base md:text-lg text-white/90 mb-6 sm:mb-8 max-w-4xl font-medium leading-tight"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2, duration: 0.5 }}
@@ -170,10 +166,17 @@ export function HomeHero({
                     asChild
                     className="text-white hover:bg-white hover:text-primary font-medium w-full sm:w-auto rounded-full text-sm sm:text-base"
                   >
-                    <Link href="/contact">
-                      Discover All Industries{" "}
-                      <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
-                    </Link>
+                    {ctaExternal ? (
+                      <a href={ctaLink} target="_blank" rel="noopener noreferrer">
+                        {ctaText}{" "}
+                        <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+                      </a>
+                    ) : (
+                      <Link href={ctaLink}>
+                        {ctaText}{" "}
+                        <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+                      </Link>
+                    )}
                   </Button>
                   <Button
                     size="lg"
@@ -224,13 +227,13 @@ export function HomeHero({
         transition={{ delay: 1, duration: 0.5 }}
       >
         <motion.div
-          className="w-5 h-7 rounded-full border border-white/80 flex items-start justify-center p-1"
+          className="w-5 h-7 rounded-full border border-white/90 flex items-start justify-center p-1"
           animate={{ y: [0, 5, 0] }}
           transition={{ duration: 1.5, repeat: Infinity }}
         >
-          <div className="w-1 h-2 rounded-full bg-white/80" />
+          <div className="w-1 h-2 rounded-full bg-white/90" />
         </motion.div>
-        <span className="text-xs text-white/70 font-medium tracking-widest">
+        <span className="text-xs text-white/90 font-bold tracking-widest">
           Scroll
         </span>
       </motion.div>

@@ -26,6 +26,7 @@ interface FeaturedCompanyProps {
 
 export function FeaturedCompany({
   backgroundImage,
+  logo,
   sectionLabel = "Who we are",
   heading,
   description,
@@ -44,16 +45,35 @@ export function FeaturedCompany({
 
             {/* Left Content */}
             <div className="w-full lg:w-[45%] flex flex-col justify-center">
-              {/* Section Label */}
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4 }}
-                className="bg-primary/10 text-primary font-semibold text-sm mb-3 rounded-full py-2 px-4 w-fit text-center"
-              >
-                {sectionLabel}
-              </motion.p>
+              {/* Section Label / Logo */}
+              {logo ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4 }}
+                  className="mb-5 w-fit"
+                >
+                  <Image
+                    src={logo}
+                    alt={sectionLabel}
+                    width={160}
+                    height={56}
+                    className="h-10 sm:h-12 w-auto"
+                    style={{ width: "auto" }}
+                  />
+                </motion.div>
+              ) : (
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4 }}
+                  className="bg-primary/10 text-primary font-semibold text-sm mb-3 rounded-full py-2 px-4 w-fit text-center"
+                >
+                  {sectionLabel}
+                </motion.p>
+              )}
 
               {/* Heading */}
               <motion.h2

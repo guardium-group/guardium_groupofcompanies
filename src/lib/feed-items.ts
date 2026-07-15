@@ -10,7 +10,7 @@ export const feedItems: FeedItem[] = [
   {
     type: "announcement",
     label: "Guardium Group expands with new technology division.",
-    href: "/news",
+    href: "/companies/technologies",
   },
   {
     type: "blog",

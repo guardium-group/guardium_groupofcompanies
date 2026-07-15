@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Home, Mail } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Page Not Found | Guardium Group of Companies",
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
 
 export default function NotFound() {
   return (

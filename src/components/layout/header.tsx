@@ -96,14 +96,14 @@ function AnnouncementFeed() {
 }
 
 const companies = [
-  { name: "Guardium Towing", href: "https://guardiumtowing.com", description: "24/7 Towing & Recovery" },
-  { name: "Guardium Security", href: "https://guardiumsecurity.com", description: "Security Services" },
-  { name: "Guardium Logistics", href: "https://guardiumlogistics.com", description: "Freight & Logistics" },
-  { name: "Guardium Courier", href: "https://guardiumcourier.com", description: "Delivery Services" },
-  { name: "Guardium Technologies", href: "https://guardiumtech.com", description: "Technology Solutions" },
-  { name: "Guardium Property Services", href: "https://guardiumgc.com", description: "Property Management" },
-  { name: "Guardium Staffing", href: "https://guardiumstaffing.com", description: "Staffing Solutions" },
-  { name: "Guardium Consulting", href: "https://guardiumconsulting.com", description: "Business Consulting" },
+  { name: "Guardium Towing", slug: "towing", href: "https://guardiumtowing.com", description: "24/7 Towing & Recovery" },
+  { name: "Guardium Security", slug: "security", href: "https://guardiumsecurity.com", description: "Security Services" },
+  { name: "Guardium Logistics", slug: "logistics", href: "https://guardiumlogistics.com", description: "Freight & Logistics" },
+  { name: "Guardium Courier", slug: "courier", href: "https://guardiumcourier.com", description: "Delivery Services" },
+  { name: "Guardium Technologies", slug: "technologies", href: "https://guardiumtech.com", description: "Technology Solutions" },
+  { name: "Guardium Property Services", slug: "property-services", href: "https://guardiumgc.com", description: "Property Management" },
+  { name: "Guardium Staffing", slug: "staffing", href: "https://guardiumstaffing.com", description: "Staffing Solutions" },
+  { name: "Guardium Consulting", slug: "consulting", href: "https://guardiumconsulting.com", description: "Business Consulting" },
 ];
 
 export function Header() {
@@ -222,12 +222,20 @@ export function Header() {
                       </div>
                     </HoveredLink>
                     {companies.map((company) => (
-                      <HoveredLink key={company.href} href={company.href}>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-gray-800 hover:text-primary">{company.name}</span>
-                          <span className="text-xs text-gray-500">{company.description}</span>
-                        </div>
-                      </HoveredLink>
+                      <div key={company.slug} className="flex items-center justify-between gap-4">
+                        <HoveredLink href={company.href}>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gray-800 hover:text-primary">{company.name}</span>
+                            <span className="text-xs text-gray-500">{company.description}</span>
+                          </div>
+                        </HoveredLink>
+                        <Link
+                          href={`/companies/${company.slug}`}
+                          className="text-xs text-primary/70 hover:text-primary shrink-0 whitespace-nowrap"
+                        >
+                          Details
+                        </Link>
+                      </div>
                     ))}
                   </div>
                 </MenuItem>
@@ -351,16 +359,24 @@ export function Header() {
                         View All Companies
                       </Link>
                       {companies.map((company) => (
-                        <a
-                          key={company.name}
-                          href={company.href}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block py-2 pl-4 text-gray-600 hover:text-primary transition-colors"
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          {company.name}
-                        </a>
+                        <div key={company.slug} className="flex items-center justify-between gap-3 pl-4">
+                          <a
+                            href={company.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block py-2 text-gray-600 hover:text-primary transition-colors"
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            {company.name}
+                          </a>
+                          <Link
+                            href={`/companies/${company.slug}`}
+                            className="text-xs text-primary/70 hover:text-primary shrink-0"
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            Details
+                          </Link>
+                        </div>
                       ))}
                     </>
                   )}

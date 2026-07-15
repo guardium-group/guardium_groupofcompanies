@@ -5,15 +5,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Cookie } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
 import Link from "next/link";
+import { CONSENT_STORAGE_KEY } from "@/lib/site-config";
 
 declare global {
   interface Window {
-    gtag: (...args: unknown[]) => void;
+    gtag?: (...args: unknown[]) => void;
     dataLayer: unknown[];
   }
 }
 
-const CONSENT_KEY = "ggc-cookie-consent";
+const CONSENT_KEY = CONSENT_STORAGE_KEY;
 
 export function CookieConsent() {
   const [visible, setVisible] = useState(false);

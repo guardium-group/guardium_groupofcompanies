@@ -113,6 +113,7 @@ export function CompaniesCarousel({
                           src={company.image}
                           alt={company.name}
                           fill
+                          sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 23vw"
                           className="object-cover"
                         />
                       ) : (

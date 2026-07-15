@@ -1,7 +1,32 @@
+import type { Metadata } from "next";
 import { BreadcrumbHero } from "@/components/breadcrumb-hero";
+import { SITE_URL } from "@/lib/site-config";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Terms of Service | Guardium Group of Companies",
+  description:
+    "Terms of service for Guardium Group of Companies and its family of subsidiary businesses.",
+  alternates: {
+    canonical: "/terms",
+  },
+  openGraph: {
+    title: "Terms of Service | Guardium Group of Companies",
+    description:
+      "Terms of service for Guardium Group of Companies and its family of subsidiary businesses.",
+    url: `${SITE_URL}/terms`,
+    siteName: "Guardium Group",
+    type: "website",
+    locale: "en_CA",
+    images: [{ url: "/images/og-default.png", width: 1200, height: 630, alt: "Guardium Group of Companies" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@group_guardium",
+    title: "Terms of Service | Guardium Group of Companies",
+    description:
+      "Terms of service for Guardium Group of Companies and its family of subsidiary businesses.",
+    images: ["/images/og-default.png"],
+  },
 };
 
 export default function TermsPage() {

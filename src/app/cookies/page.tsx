@@ -1,7 +1,32 @@
+import type { Metadata } from "next";
 import { BreadcrumbHero } from "@/components/breadcrumb-hero";
+import { SITE_URL } from "@/lib/site-config";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Cookie Policy | Guardium Group of Companies",
+  description:
+    "How Guardium Group of Companies uses cookies and analytics, and how to manage your preferences.",
+  alternates: {
+    canonical: "/cookies",
+  },
+  openGraph: {
+    title: "Cookie Policy | Guardium Group of Companies",
+    description:
+      "How Guardium Group of Companies uses cookies and analytics, and how to manage your preferences.",
+    url: `${SITE_URL}/cookies`,
+    siteName: "Guardium Group",
+    type: "website",
+    locale: "en_CA",
+    images: [{ url: "/images/og-default.png", width: 1200, height: 630, alt: "Guardium Group of Companies" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@group_guardium",
+    title: "Cookie Policy | Guardium Group of Companies",
+    description:
+      "How Guardium Group of Companies uses cookies and analytics, and how to manage your preferences.",
+    images: ["/images/og-default.png"],
+  },
 };
 
 export default function CookiesPage() {
