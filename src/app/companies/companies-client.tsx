@@ -241,7 +241,9 @@ export function CompaniesClient() {
                         {/* Action Buttons */}
                         <div className="flex flex-wrap gap-2">
                           <Button variant="ghost" size="sm" className="rounded-full" asChild>
-                            <Link href={`/companies/${company.slug}`}>Learn More</Link>
+                            <Link href={`/companies/${company.slug}`}>
+                              Explore {company.name}
+                            </Link>
                           </Button>
                           <Button
                             variant="outline"

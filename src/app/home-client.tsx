@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Accordion,
@@ -17,12 +15,11 @@ import {
   Users,
   Briefcase,
   HardHat,
-  ArrowRight,
   CheckCircle,
   Globe,
   Handshake,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import * as m from "framer-motion/m";
 import { HomeHero } from "@/components/home-hero";
 import { CompanyLogoCarousel } from "@/components/company-logo-carousel";
 import { CompaniesCarousel } from "@/components/companies-carousel";
@@ -30,6 +27,7 @@ import { FeaturedCompany } from "@/components/featured-company";
 import { CTACarousel } from "@/components/cta-carousel";
 import { Clock, Zap, Timer, Navigation, ShieldCheck } from "lucide-react";
 import { companiesData } from "@/lib/companies-data";
+import { LazyMotionProvider } from "@/components/motion/lazy-motion-provider";
 
 const heroSlides = [
   {
@@ -146,11 +144,6 @@ const staggerContainer = {
   },
 };
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: "easeOut" as const } },
-};
-
 const faqJsonLd = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -166,7 +159,7 @@ const faqJsonLd = {
 
 export function HomeClient() {
   return (
-    <>
+    <LazyMotionProvider>
       <script type="application/ld+json">
         {JSON.stringify(faqJsonLd)}
       </script>
@@ -202,7 +195,7 @@ export function HomeClient() {
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
-          <motion.div
+          <m.div
             className="text-center mb-10 lg:mb-12"
             initial="hidden"
             whileInView="visible"
@@ -218,9 +211,9 @@ export function HomeClient() {
             <p className="text-white/70 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed">
               Experience the difference of working with a trusted industry leader
             </p>
-          </motion.div>
+          </m.div>
 
-          <motion.div
+          <m.div
             className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-10 max-w-7xl mx-auto"
             initial="hidden"
             whileInView="visible"
@@ -233,7 +226,7 @@ export function HomeClient() {
               { icon: Globe, title: "Local Presence", desc: "Deep roots in Alberta communities" },
               { icon: Handshake, title: "Customer Focus", desc: "Your success is our priority" },
             ].map((item) => (
-              <motion.div key={item.title} variants={fadeInUp} className="group bg-white/10 shadow-sm rounded-3xl py-8 px-6">
+              <m.div key={item.title} variants={fadeInUp} className="group bg-white/10 shadow-sm rounded-3xl py-8 px-6">
                 <div className="flex items-start gap-4">
                   <div className="shrink-0 w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mt-0.5 group-hover:bg-white/30 transition-colors duration-300">
                     <item.icon className="h-5 w-5 text-white" strokeWidth={1.75} />
@@ -247,9 +240,9 @@ export function HomeClient() {
                     </p>
                   </div>
                 </div>
-              </motion.div>
+              </m.div>
             ))}
-          </motion.div>
+          </m.div>
         </div>
       </section>
 
@@ -258,10 +251,10 @@ export function HomeClient() {
         backgroundImage="/images/hero-1.jpg"
         logo="/cliffs_logo.png"
         sectionLabel="Cliff's Towing"
-        heading="Big or Small, We Tow them all"
+        heading="Big or Small, We Tow Them All"
         description="When the unexpected happens, count on us to tow you through. For over 70 years, Cliffs has been Edmonton’s cornerstone of transport, recovery, and towing services."
         tagline="Trusted towing partner serving the Edmonton area with fast, reliable service 24/7."
-        ctaText="Contact Us"
+        ctaText="Visit Cliff's Towing"
         ctaLink="https://cliffstowing.ca"
         features={[
           {
@@ -288,10 +281,10 @@ export function HomeClient() {
       <FeaturedCompany
         backgroundImage="/images/featured/courier.png"
         sectionLabel="YEG Courier"
-        heading="Edmonton's Go To Courier & Delivery Service"
+        heading="Edmonton's Go-To Courier & Delivery Service"
         description="From urgent documents to large packages, we ensure your items arrive safely and on time."
         tagline="Premium courier and delivery services throughout the Edmonton area."
-        ctaText="Contact Us"
+        ctaText="Visit YEG Courier"
         ctaLink="https://yegcourier.com"
         features={[
           {
@@ -320,7 +313,7 @@ export function HomeClient() {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
-            <motion.div
+            <m.div
               className="text-center mb-12"
               initial="hidden"
               whileInView="visible"
@@ -336,9 +329,9 @@ export function HomeClient() {
               <p className="text-gray-600">
                 Got questions? We&apos;ve got answers. Contact us for anything else.
               </p>
-            </motion.div>
+            </m.div>
 
-            <motion.div
+            <m.div
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
@@ -354,13 +347,13 @@ export function HomeClient() {
                   </AccordionItem>
                 ))}
               </Accordion>
-            </motion.div>
+            </m.div>
           </div>
         </div>
       </section>
 
      {/* CTA Carousel */}
      <CTACarousel />
-    </>
+    </LazyMotionProvider>
   );
 }

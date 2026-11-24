@@ -4,22 +4,40 @@ import { headers } from "next/headers";
 import { contactSchema, type ContactFormData } from "@/lib/validations/contact";
 import {
   checkRateLimit,
+  isRateLimited,
   getRateLimitKey,
   RATE_LIMITS,
 } from "@/lib/security/rate-limiter";
 import {
   validateHoneypot,
   validateFormTiming,
+  consumeFormToken,
+  releaseFormToken,
   performSpamCheck,
   sanitizeFormData,
   escapeHtml,
   generateFormToken,
 } from "@/lib/security/spam-detection";
-import { verifyTurnstileToken } from "@/components/ui/turnstile";
+import {
+  isTurnstileConfigured,
+  verifyTurnstileToken,
+} from "@/lib/security/turnstile-server";
 
 const BREVO_API_URL = "https://api.brevo.com/v3";
+const PHONE_DISPLAY = "+1 780-809-7860";
 
-export interface ContactSubmission extends ContactFormData {
+// Local testing only: run every check but skip the Brevo call. Set as a
+// process env var on a test server, never in an .env file.
+const DRY_RUN = process.env.CONTACT_DRY_RUN === "1";
+if (DRY_RUN) {
+  console.warn(
+    "[CONTACT] *** DRY RUN MODE — contact form submissions will NOT be emailed (CONTACT_DRY_RUN=1) ***"
+  );
+}
+
+// Untrusted input shape: services are validated against serviceOptions on the server.
+export interface ContactSubmission extends Omit<ContactFormData, "services"> {
+  services?: string[];
   _honeypot?: string;
   _formToken?: string;
   _timestamp?: number;
@@ -33,33 +51,30 @@ export interface ContactResponse {
   code?: string;
 }
 
-async function getClientIP(): Promise<string> {
-  const headersList = await headers();
+let warnedNoTrustedIp = false;
 
-  // Prefer headers set by a trusted edge/proxy that can't be overwritten by
-  // the client. cf-connecting-ip is set by Cloudflare's edge itself.
-  const cfConnectingIP = headersList.get("cf-connecting-ip");
-  if (cfConnectingIP) {
-    return cfConnectingIP;
+/**
+ * Client IP from the single header named by TRUSTED_IP_HEADER (e.g.
+ * "cf-connecting-ip" behind Cloudflare, "x-real-ip" behind a proxy that sets
+ * it). Any other forwarding header can be set by the client, so without that
+ * configuration we return null and skip per-IP limits rather than put every
+ * visitor in one shared bucket.
+ */
+async function getClientIP(): Promise<string | null> {
+  const headerName = process.env.TRUSTED_IP_HEADER?.trim().toLowerCase();
+  if (headerName) {
+    const headersList = await headers();
+    const value = headersList.get(headerName)?.split(",")[0]?.trim();
+    if (value) return value.slice(0, 64);
   }
 
-  // x-real-ip is typically set by a single trusted reverse proxy (nginx, etc.)
-  const realIP = headersList.get("x-real-ip");
-  if (realIP) {
-    return realIP;
+  if (!warnedNoTrustedIp) {
+    warnedNoTrustedIp = true;
+    console.warn(
+      "[SECURITY] TRUSTED_IP_HEADER is not set or the header is missing; per-IP rate limiting is disabled."
+    );
   }
-
-  // x-forwarded-for is a comma-separated hop chain where each proxy appends
-  // to the end. The leftmost entry is client-supplied and trivially spoofable
-  // (a client can send any value there); the rightmost entry is the one added
-  // by the last (closest, most trusted) hop before reaching this server.
-  const forwardedFor = headersList.get("x-forwarded-for");
-  if (forwardedFor) {
-    const hops = forwardedFor.split(",").map((ip) => ip.trim());
-    return hops[hops.length - 1];
-  }
-
-  return "unknown";
+  return null;
 }
 
 /**
@@ -81,16 +96,26 @@ function logSecurityEvent(
   });
 }
 
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return "***";
+  return `${local.slice(0, 2)}***@${domain}`;
+}
+
 export async function submitContact(
   rawData: ContactSubmission
 ): Promise<ContactResponse> {
   const clientIP = await getClientIP();
 
   try {
+    if (!rawData || typeof rawData !== "object") {
+      return { success: false, message: "Please check your input and try again.", code: "VALIDATION_ERROR" };
+    }
+
     // ==========================================
     // LAYER 1: Honeypot Check
     // ==========================================
-    if (!validateHoneypot(rawData._honeypot)) {
+    if (!validateHoneypot(typeof rawData._honeypot === "string" ? rawData._honeypot : undefined)) {
       logSecurityEvent("HONEYPOT_TRIGGERED", { ip: clientIP, form: "contact" });
       return {
         success: true,
@@ -99,12 +124,9 @@ export async function submitContact(
     }
 
     // ==========================================
-    // LAYER 2: Timing Validation
+    // LAYER 2: Signed form token + timing
     // ==========================================
-    const timingResult = validateFormTiming(
-      rawData._formToken,
-      rawData._timestamp
-    );
+    const timingResult = validateFormTiming(rawData._formToken, rawData._timestamp);
     if (!timingResult.valid) {
       logSecurityEvent("TIMING_VIOLATION", {
         ip: clientIP,
@@ -114,40 +136,51 @@ export async function submitContact(
       return {
         success: false,
         message: timingResult.reason || "Please try again",
-        code: "TIMING_ERROR",
+        code: timingResult.expired ? "TOKEN_EXPIRED" : "TIMING_ERROR",
       };
     }
 
     // ==========================================
-    // LAYER 3: Rate Limiting by IP
+    // LAYER 3: Rate Limiting by IP (only with a trusted IP source)
     // ==========================================
-    const ipRateLimit = checkRateLimit(
-      getRateLimitKey("contact_ip", clientIP),
-      RATE_LIMITS.contact
-    );
+    if (clientIP) {
+      if (isRateLimited(getRateLimitKey("suspicious", clientIP), RATE_LIMITS.suspicious)) {
+        logSecurityEvent("SUSPICIOUS_BLOCKED", { ip: clientIP, form: "contact" });
+        return {
+          success: false,
+          message: `Your message could not be sent. Please call us directly at ${PHONE_DISPLAY}.`,
+          code: "RATE_LIMIT",
+        };
+      }
 
-    if (!ipRateLimit.allowed) {
-      logSecurityEvent("RATE_LIMIT_IP", {
-        ip: clientIP,
-        form: "contact",
-        retryAfter: ipRateLimit.retryAfter,
-      });
-      return {
-        success: false,
-        message: `Too many requests. Please wait ${Math.ceil((ipRateLimit.retryAfter || 60) / 60)} minutes.`,
-        code: "RATE_LIMIT",
-      };
+      const ipRateLimit = checkRateLimit(
+        getRateLimitKey("contact_ip", clientIP),
+        RATE_LIMITS.contact
+      );
+      if (!ipRateLimit.allowed) {
+        logSecurityEvent("RATE_LIMIT_IP", {
+          ip: clientIP,
+          form: "contact",
+          retryAfter: ipRateLimit.retryAfter,
+        });
+        return {
+          success: false,
+          message: `Too many requests. Please wait ${Math.ceil((ipRateLimit.retryAfter || 60) / 60)} minutes.`,
+          code: "RATE_LIMIT",
+        };
+      }
     }
 
     // ==========================================
-    // LAYER 4: Sanitize Input
+    // LAYER 4: Sanitize + Schema Validation
     // ==========================================
-    const data = sanitizeFormData(rawData);
-
-    // ==========================================
-    // LAYER 5: Schema Validation
-    // ==========================================
-    const parsed = contactSchema.safeParse(data);
+    const sanitized = sanitizeFormData({
+      name: rawData.name,
+      email: rawData.email,
+      message: rawData.message,
+      services: rawData.services,
+    });
+    const parsed = contactSchema.safeParse(sanitized);
     if (!parsed.success) {
       logSecurityEvent("VALIDATION_FAILED", {
         ip: clientIP,
@@ -160,33 +193,26 @@ export async function submitContact(
         code: "VALIDATION_ERROR",
       };
     }
+    const data = parsed.data;
+    const emailKey = data.email.toLowerCase();
 
-    // ==========================================
-    // LAYER 6: Rate Limiting by Email
-    // ==========================================
-    const emailRateLimit = checkRateLimit(
-      getRateLimitKey("contact_email", data.email.toLowerCase()),
-      RATE_LIMITS.contactByEmail
-    );
-
-    if (!emailRateLimit.allowed) {
-      logSecurityEvent("RATE_LIMIT_EMAIL", {
-        ip: clientIP,
-        form: "contact",
-        email: data.email,
-      });
+    if (isRateLimited(getRateLimitKey("suspicious", emailKey), RATE_LIMITS.suspicious)) {
+      logSecurityEvent("SUSPICIOUS_BLOCKED", { ip: clientIP, form: "contact", email: maskEmail(emailKey) });
       return {
         success: false,
-        message: "A message was recently sent from this email. Please wait or call us directly.",
+        message: `Your message could not be sent. Please call us directly at ${PHONE_DISPLAY}.`,
         code: "RATE_LIMIT",
       };
     }
 
     // ==========================================
-    // LAYER 7: Turnstile CAPTCHA Verification
+    // LAYER 5: Turnstile CAPTCHA Verification
     // ==========================================
-    if (process.env.TURNSTILE_SECRET_KEY && data._turnstileToken) {
-      const turnstileResult = await verifyTurnstileToken(data._turnstileToken);
+    if (isTurnstileConfigured()) {
+      const turnstileResult = await verifyTurnstileToken(
+        typeof rawData._turnstileToken === "string" ? rawData._turnstileToken : "",
+        clientIP
+      );
       if (!turnstileResult.success) {
         logSecurityEvent("TURNSTILE_FAILED", {
           ip: clientIP,
@@ -195,14 +221,22 @@ export async function submitContact(
         });
         return {
           success: false,
-          message: "Security verification failed. Please refresh and try again.",
+          message: "Security verification failed. Please complete the check and try again.",
           code: "CAPTCHA_FAILED",
         };
       }
+    } else if (process.env.NODE_ENV === "production") {
+      // Fail closed: without CAPTCHA the form is an open relay to our inbox.
+      logSecurityEvent("TURNSTILE_NOT_CONFIGURED", { ip: clientIP, form: "contact" });
+      return {
+        success: false,
+        message: `The contact form is temporarily unavailable. Please call us directly at ${PHONE_DISPLAY}.`,
+        code: "CONFIG_ERROR",
+      };
     }
 
     // ==========================================
-    // LAYER 8: Spam Content Analysis
+    // LAYER 6: Spam Content Analysis
     // ==========================================
     const spamCheck = performSpamCheck({
       name: data.name,
@@ -218,27 +252,72 @@ export async function submitContact(
         reasons: spamCheck.reasons,
       });
 
-      checkRateLimit(
-        getRateLimitKey("suspicious", clientIP),
-        RATE_LIMITS.suspicious
-      );
+      // Block this sender for a while (enforced at layers 3 and 4).
+      checkRateLimit(getRateLimitKey("suspicious", emailKey), RATE_LIMITS.suspicious);
+      if (clientIP) {
+        checkRateLimit(getRateLimitKey("suspicious", clientIP), RATE_LIMITS.suspicious);
+      }
 
       return {
         success: false,
-        message: "Your message could not be sent. Please call us directly at 780-809-7860.",
+        message: `Your message could not be sent. Please call us directly at ${PHONE_DISPLAY}.`,
         code: "VALIDATION_ERROR",
       };
     }
 
     // ==========================================
-    // LAYER 9: Environment Check
+    // LAYER 7: Rate Limiting by Email
+    // (after CAPTCHA/spam checks so forged submissions can't use up a real
+    // person's allowance)
     // ==========================================
-    if (!process.env.BREVO_API_KEY) {
+    const emailRateLimit = checkRateLimit(
+      getRateLimitKey("contact_email", emailKey),
+      RATE_LIMITS.contactByEmail
+    );
+
+    if (!emailRateLimit.allowed) {
+      logSecurityEvent("RATE_LIMIT_EMAIL", {
+        ip: clientIP,
+        form: "contact",
+        email: maskEmail(emailKey),
+      });
+      return {
+        success: false,
+        message: "A message was recently sent from this email. Please wait or call us directly.",
+        code: "RATE_LIMIT",
+      };
+    }
+
+    // ==========================================
+    // LAYER 8: Environment Check
+    // ==========================================
+    if (!DRY_RUN && !process.env.BREVO_API_KEY) {
       console.error("BREVO_API_KEY not configured");
       return {
         success: false,
         message: "Contact service temporarily unavailable. Please call us directly.",
         code: "CONFIG_ERROR",
+      };
+    }
+
+    // ==========================================
+    // LAYER 9: Single-use form token
+    // (synchronous check-and-set, so concurrent replays can't both pass)
+    // ==========================================
+    if (!consumeFormToken(rawData._formToken as string, rawData._timestamp as number)) {
+      logSecurityEvent("TOKEN_REPLAY", { ip: clientIP, form: "contact" });
+      return {
+        success: false,
+        message: "This form was already submitted. Please refresh and try again.",
+        code: "TOKEN_EXPIRED",
+      };
+    }
+
+    if (DRY_RUN) {
+      console.log(`[CONTACT] DRY RUN — would send message from ${maskEmail(emailKey)}`);
+      return {
+        success: true,
+        message: "Message sent successfully! We'll get back to you within 24 hours.",
       };
     }
 
@@ -345,12 +424,14 @@ export async function submitContact(
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
-        "api-key": process.env.BREVO_API_KEY,
+        "api-key": process.env.BREVO_API_KEY as string,
       },
       body: JSON.stringify(emailPayload),
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!response.ok) {
+      releaseFormToken(rawData._formToken as string);
       const errorData = await response.json().catch(() => ({}));
       console.error("Brevo email error:", errorData);
       return {
@@ -360,13 +441,16 @@ export async function submitContact(
       };
     }
 
-    console.log(`[CONTACT] Message sent from ${data.email}`);
+    console.log(`[CONTACT] Message sent from ${maskEmail(emailKey)}`);
 
     return {
       success: true,
       message: "Message sent successfully! We'll get back to you within 24 hours.",
     };
   } catch (error) {
+    if (rawData && typeof rawData._formToken === "string") {
+      releaseFormToken(rawData._formToken);
+    }
     console.error("Contact submission error:", error);
 
     logSecurityEvent("SUBMISSION_ERROR", {

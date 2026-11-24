@@ -1,52 +1,48 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
+import * as m from "framer-motion/m";
 import { Cookie } from "lucide-react";
-import { usePostHog } from "posthog-js/react";
 import Link from "next/link";
-import { CONSENT_STORAGE_KEY } from "@/lib/site-config";
-
-declare global {
-  interface Window {
-    gtag?: (...args: unknown[]) => void;
-    dataLayer: unknown[];
-  }
-}
-
-const CONSENT_KEY = CONSENT_STORAGE_KEY;
+import { LazyMotionProvider } from "@/components/motion/lazy-motion-provider";
+import { CONSENT_OPEN_EVENT, readConsent, writeConsent } from "@/lib/consent";
 
 export function CookieConsent() {
   const [visible, setVisible] = useState(false);
-  const posthog = usePostHog();
 
   useEffect(() => {
-    const stored = localStorage.getItem(CONSENT_KEY);
-    if (!stored) setVisible(true);
+    const open = () => setVisible(true);
+    window.addEventListener(CONSENT_OPEN_EVENT, open);
+
+    let frame = 0;
+    if (!readConsent()) {
+      frame = requestAnimationFrame(open);
+    }
+    return () => {
+      window.removeEventListener(CONSENT_OPEN_EVENT, open);
+      cancelAnimationFrame(frame);
+    };
   }, []);
 
+  // Google Analytics and PostHog listen for the change event and start/stop themselves.
   function accept() {
-    localStorage.setItem(CONSENT_KEY, "accepted");
-    posthog?.opt_in_capturing();
-    if (typeof window !== "undefined" && window.gtag) {
-      window.gtag("consent", "update", {
-        analytics_storage: "granted",
-        ad_storage: "granted",
-      });
-    }
+    writeConsent("accepted");
     setVisible(false);
   }
 
   function reject() {
-    localStorage.setItem(CONSENT_KEY, "rejected");
-    posthog?.opt_out_capturing();
+    writeConsent("rejected");
     setVisible(false);
   }
 
   return (
-    <AnimatePresence>
-      {visible && (
-        <motion.div
+    <LazyMotionProvider>
+      <AnimatePresence>
+        {visible && (
+          <m.div
+          role="dialog"
+          aria-label="Cookie consent"
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -62,7 +58,7 @@ export function CookieConsent() {
               <p className="text-gray-500 text-xs mt-1 leading-relaxed">
                 We use analytics cookies to improve your experience and understand site traffic.{" "}
                 <Link href="/cookies" className="text-[#511010] hover:underline">
-                  Learn more
+                  Cookie details
                 </Link>
               </p>
             </div>
@@ -81,8 +77,9 @@ export function CookieConsent() {
               Accept All
             </button>
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          </m.div>
+        )}
+      </AnimatePresence>
+    </LazyMotionProvider>
   );
 }

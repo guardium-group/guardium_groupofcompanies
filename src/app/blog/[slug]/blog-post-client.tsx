@@ -7,7 +7,7 @@ import { ArrowRight, Calendar, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BreadcrumbHero } from "@/components/breadcrumb-hero";
-import { companiesData } from "@/lib/companies-data";
+import { getCompany } from "@/lib/companies-data";
 import type { BlogPost } from "@/lib/blog";
 
 const fadeInUp = {
@@ -16,7 +16,7 @@ const fadeInUp = {
 };
 
 export function BlogPostClient({ post }: { post: BlogPost }) {
-  const relatedCompany = post.relatedCompanySlug ? companiesData[post.relatedCompanySlug] : undefined;
+  const relatedCompany = post.relatedCompanySlug ? getCompany(post.relatedCompanySlug) : undefined;
 
   return (
     <>
@@ -44,10 +44,14 @@ export function BlogPostClient({ post }: { post: BlogPost }) {
             <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
               <span className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
+                {/* "YYYY-MM-DD" parses as UTC midnight, so format in UTC too —
+                    otherwise Edmonton visitors see the previous day and the
+                    server/client output differs. */}
                 {new Date(post.publishedAt).toLocaleDateString("en-CA", {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
+                  timeZone: "UTC",
                 })}
               </span>
               <span className="flex items-center gap-1.5">

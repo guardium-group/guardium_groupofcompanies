@@ -55,8 +55,8 @@ export default function CookiesPage() {
             </p>
             <p>
               When you first visit our site, you can choose to accept or reject analytics cookies
-              using the consent banner. You can change your preference at any time by clearing
-              your browser&apos;s local storage for this site.
+              using the consent banner. Analytics only load after you accept. You can change your
+              preference at any time with the &ldquo;Cookie Settings&rdquo; link in the site footer.
             </p>
             <p>
               <strong className="text-gray-900">Contact us</strong>

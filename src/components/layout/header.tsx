@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Menu as MenuIcon,
@@ -18,7 +19,10 @@ import {
 import { cn } from "@/lib/utils";
 import { Menu, MenuItem, HoveredLink } from "@/components/ui/navbar-menu";
 import { feedItems, type FeedItemType } from "@/lib/feed-items";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
+import * as m from "framer-motion/m";
+import { LazyMotionProvider } from "@/components/motion/lazy-motion-provider";
+import { useAutoplay } from "@/components/motion/use-autoplay";
 import {
   FacebookIcon,
   InstagramIcon,
@@ -29,31 +33,25 @@ import {
 
 const FEED_ROTATE_INTERVAL_MS = 5000;
 
-function getFeedIcon(type: FeedItemType) {
+function FeedIcon({ type }: { type: FeedItemType }) {
+  const className = "h-3.5 w-3.5 text-gray-300 shrink-0";
   switch (type) {
     case "announcement":
-      return Megaphone;
+      return <Megaphone className={className} />;
     case "blog":
-      return Newspaper;
+      return <Newspaper className={className} />;
     case "deal":
-      return Tag;
+      return <Tag className={className} />;
     default:
-      return Megaphone;
+      return <Megaphone className={className} />;
   }
 }
 
 function AnnouncementFeed() {
-  const [index, setIndex] = useState(0);
+  const { index, pauseHandlers } = useAutoplay(feedItems.length, FEED_ROTATE_INTERVAL_MS);
   const item = feedItems[index];
+  if (!item) return null;
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      setIndex((i) => (i + 1) % feedItems.length);
-    }, FEED_ROTATE_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, []);
-
-  const Icon = getFeedIcon(item.type);
   const isExternal = item.href.startsWith("tel:") || item.href.startsWith("http");
   const ctaLabel =
     item.type === "announcement"
@@ -66,10 +64,10 @@ function AnnouncementFeed() {
     "hidden sm:inline-flex drop-shadow-md items-center gap-1 font-medium text-gray-300 hover:text-white transition-colors";
 
   return (
-    <div className="flex min-w-0 items-center lg:gap-2 gap-2">
-      <Icon className="h-3.5 w-3.5 text-gray-300 shrink-0" />
+    <div className="flex min-w-0 items-center lg:gap-2 gap-2" aria-live="off" {...pauseHandlers}>
+      <FeedIcon type={item.type} />
       <AnimatePresence mode="wait">
-        <motion.span
+        <m.span
           key={item.label}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -78,7 +76,7 @@ function AnnouncementFeed() {
           className="truncate tracking-tighter drop-shadow-2xl text-[12px] sm:text-sm  font-medium text-white"
         >
           {item.label}
-        </motion.span>
+        </m.span>
       </AnimatePresence>
       {isExternal ? (
         <a href={item.href} className={linkClass}>
@@ -111,47 +109,66 @@ export function Header() {
   const [mobileCompaniesOpen, setMobileCompaniesOpen] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+  const [menuPath, setMenuPath] = useState(pathname);
+
+  // Close the mobile menu on any navigation (links, back/forward, logo).
+  if (pathname !== menuPath) {
+    setMenuPath(pathname);
+    setMobileMenuOpen(false);
+    setActive(null);
+  }
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileMenuOpen]);
+
   return (
-    <>
+    <LazyMotionProvider>
+      <>
       {/* Fixed announcement bar */}
       <div className="fixed top-0 inset-x-0 z-60 bg-linear-to-r from-blue-500 to-blue-600 backdrop-blur-2xl shadow-xs border-b border-blue-500 px-2">
         <div className="container mx-auto px-2 py-2 flex items-center justify-between gap-3 font-mono text-xs">
           <AnnouncementFeed />
 
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center shrink-0">
             <a
               href="https://www.facebook.com/guardiumgroup"
               target="_blank"
               rel="noreferrer"
               aria-label="Guardium Group on Facebook"
-              className="text-white hover:text-primary transition-colors"
+              className="text-white hover:text-primary transition-colors p-1.5"
             >
               <FacebookIcon className="h-3.5 w-3.5" />
             </a>
             <a
-              href="https://www.instagram.com/guardiumgroup"
+              href="https://www.instagram.com/guardium.group/"
               target="_blank"
               rel="noreferrer"
               aria-label="Guardium Group on Instagram"
-              className="text-white hover:text-primary transition-colors"
+              className="text-white hover:text-primary transition-colors p-1.5"
             >
               <InstagramIcon className="h-3.5 w-3.5" />
             </a>
             <a
-              href="https://x.com/guardiumgroup"
+              href="https://x.com/group_guardium"
               target="_blank"
               rel="noreferrer"
               aria-label="Guardium Group on X"
-              className="text-white hover:text-primary transition-colors"
+              className="text-white hover:text-primary transition-colors p-1.5"
             >
               <TwitterIcon className="h-3.5 w-3.5" />
             </a>
@@ -160,7 +177,7 @@ export function Header() {
               target="_blank"
               rel="noreferrer"
               aria-label="Guardium Group on LinkedIn"
-              className="text-white hover:text-primary transition-colors"
+              className="text-white hover:text-primary transition-colors p-1.5"
             >
               <LinkedinIcon className="h-3.5 w-3.5" />
             </a>
@@ -169,7 +186,7 @@ export function Header() {
               target="_blank"
               rel="noreferrer"
               aria-label="Guardium Group on YouTube"
-              className="text-white hover:text-primary transition-colors"
+              className="text-white hover:text-primary transition-colors p-1.5"
             >
               <YoutubeIcon className="h-3.5 w-3.5" />
             </a>
@@ -177,21 +194,21 @@ export function Header() {
         </div>
       </div>
 
-      <motion.header
+      <m.header
         className="fixed top-8 inset-x-0 z-50"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" as const }}
       >
         <div className="container mx-auto px-4 py-4">
-          <motion.div
+          <m.div
             className={cn(
               "flex items-center justify-between border bg-white/95 backdrop-blur-xl rounded-full py-1.5 px-4 transition-all duration-300",
               scrolled ? "border-gray-200 shadow-lg" : "border-gray-100 shadow-sm"
             )}
           >
             {/* Logo */}
-            <Link href="/" className="z-50">
+            <Link href="/" className="z-50" onClick={() => setMobileMenuOpen(false)}>
               <Image
                 src="/images/ggc_logo.png"
                 alt="Guardium Group"
@@ -210,7 +227,7 @@ export function Header() {
                 </Link>
 
                 <Link href="/about" className="text-gray-900 hover:text-primary font-medium transition-colors">
-                  About-Us
+                  About Us
                 </Link>
 
                 <MenuItem setActive={setActive} active={active} item="Companies">
@@ -278,7 +295,7 @@ export function Header() {
                       </HoveredLink>
                       <HoveredLink href="https://guardiumtech.com">
                         <div className="flex items-center text-gray-700 gap-2">
-                          <span>Guardium Tech</span>
+                          <span>Guardium Technologies</span>
                         </div>
                       </HoveredLink>
                     </div>
@@ -302,7 +319,9 @@ export function Header() {
             <button
               className="lg:hidden p-2 rounded-md"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
             >
               {mobileMenuOpen ? (
                 <X className="h-6 w-6 text-gray-700" />
@@ -310,13 +329,14 @@ export function Header() {
                 <MenuIcon className="h-6 w-6 text-gray-700" />
               )}
             </button>
-          </motion.div>
+          </m.div>
         </div>
 
         {/* Mobile menu */}
         <AnimatePresence>
           {mobileMenuOpen && (
-            <motion.div
+            <m.div
+              id="mobile-menu"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
@@ -341,7 +361,9 @@ export function Header() {
 
                 <div className="space-y-2">
                   <button
+                    type="button"
                     className="flex items-center justify-between w-full text-sm font-bold text-gray-500 uppercase tracking-wider py-1"
+                    aria-expanded={mobileCompaniesOpen}
                     onClick={() => setMobileCompaniesOpen((v) => !v)}
                   >
                     Our Companies
@@ -410,10 +432,11 @@ export function Header() {
                   </Button>
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
-      </motion.header>
-    </>
+      </m.header>
+      </>
+    </LazyMotionProvider>
   );
 }

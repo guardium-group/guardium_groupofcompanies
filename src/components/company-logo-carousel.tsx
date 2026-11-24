@@ -32,7 +32,7 @@ function CompanyLogo({ company }: { company: Company }) {
         alt={company.name}
         width={160}
         height={48}
-        className="h-10 md:h-14 w-auto object-contain"
+        className="h-10 md:h-14 w-auto object-contain grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300"
         style={{ width: "auto" }}
         onError={() => setImgError(true)}
       />
@@ -78,7 +78,7 @@ export function CompanyLogoCarousel({
             {doubledCompanies.map((company, index) => (
               <div
                 key={`${company.name}-${index}`}
-                className="flex-shrink-0 flex items-center justify-center px-8 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300"
+                className="flex-shrink-0 flex items-center justify-center px-8"
               >
                 <CompanyLogo company={company} />
               </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Phone, Mail, MapPin } from "lucide-react";
+import { CookieSettingsButton } from "@/components/analytics/cookie-settings-button";
 import {
   FacebookIcon,
   InstagramIcon,
@@ -92,9 +93,9 @@ export function Footer() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
                 {/* Our Companies */}
                 <div className="col-span-2">
-                  <h4 className="text-white font-semibold mb-4 sm:mb-5 text-sm">
+                  <h3 className="text-white font-semibold mb-4 sm:mb-5 text-sm">
                     Our Companies
-                  </h4>
+                  </h3>
                   <ul className="grid grid-cols-2 gap-x-4 gap-y-2 sm:gap-y-2.5">
                     {companies.map((company) => (
                       <li key={company.name}>
@@ -111,9 +112,9 @@ export function Footer() {
 
                 {/* Quick Links */}
                 <div>
-                  <h4 className="text-white font-semibold mb-4 sm:mb-5 text-sm">
+                  <h3 className="text-white font-semibold mb-4 sm:mb-5 text-sm">
                     Company
-                  </h4>
+                  </h3>
                   <ul className="space-y-2 sm:space-y-2.5">
                     {quickLinks.map((link) => (
                       <li key={link.name}>
@@ -130,9 +131,9 @@ export function Footer() {
 
                 {/* Legal */}
                 <div>
-                  <h4 className="text-white font-semibold mb-4 sm:mb-5 text-sm">
+                  <h3 className="text-white font-semibold mb-4 sm:mb-5 text-sm">
                     Legal
-                  </h4>
+                  </h3>
                   <ul className="space-y-2 sm:space-y-2.5">
                     {legalLinks.map((link) => (
                       <li key={link.name}>
@@ -144,6 +145,9 @@ export function Footer() {
                         </Link>
                       </li>
                     ))}
+                    <li>
+                      <CookieSettingsButton className="text-white/60 hover:text-white text-sm transition-colors cursor-pointer" />
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -171,7 +175,7 @@ export function Footer() {
               </a>
               <span className="flex items-center gap-2 text-white/60 text-sm">
                 <MapPin className="h-4 w-4 flex-shrink-0" />
-                <span>Unit 206, 4918 Roper Rd NW, Edmonton, AB T6B3T7</span>
+                <span>14360 Yellowhead Trail, Edmonton, AB T5L 3C2</span>
               </span>
             </div>
           </div>

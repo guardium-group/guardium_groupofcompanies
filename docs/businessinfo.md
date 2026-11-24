@@ -1,7 +1,7 @@
 Guardium Group of Companies
 
-Address: Unit 206, 4918 Roper Rd NW,Edmonton, AB, T6B3T7
-Email: info@guardiumgroup.com its
+Address: 14360 Yellowhead Trail, Edmonton, AB T5L 3C2
+Email: info@guardiumgroup.com
 Phone: +1 780-809-7860
 
 Social Links
@@ -12,7 +12,7 @@ https://www.instagram.com/guardium.group/
 
 
 Service Areas
-- Local: Edmonton, Sherwood Park, Spruce Groove, Beaumont, Devon, Morinville, Leduc
+- Local: Edmonton, Sherwood Park, Spruce Grove, Beaumont, Devon, Morinville, Leduc
 - Global: US, UK, INDIA, CANADA
 
 Industries We Service
@@ -23,4 +23,4 @@ Industries We Service
 - Wholesale
 - Staffing solutions
 - Courier & Hotshots
-- General Contracting / Proprty Mgt Services
+- General Contracting / Property Mgt Services

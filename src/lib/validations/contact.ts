@@ -16,12 +16,18 @@ export const contactSchema = z.object({
     .string()
     .min(2, "Name must be at least 2 characters")
     .max(100, "Name is too long"),
-  email: z.string().email("Please enter a valid email address"),
+  email: z
+    .string()
+    .max(254, "Email is too long")
+    .email("Please enter a valid email address"),
   message: z
     .string()
     .min(10, "Message must be at least 10 characters")
     .max(2000, "Message is too long"),
-  services: z.array(z.string()).optional(),
+  services: z
+    .array(z.enum(serviceOptions))
+    .max(serviceOptions.length)
+    .optional(),
 });
 
 export type ContactFormData = z.infer<typeof contactSchema>;

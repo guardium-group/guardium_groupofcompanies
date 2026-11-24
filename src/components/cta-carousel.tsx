@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
+import * as m from "framer-motion/m";
 import { ArrowRight, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAutoplay } from "@/components/motion/use-autoplay";
 
 interface CTASlide {
   headline: string;
@@ -23,7 +24,7 @@ interface CTACarouselProps {
 const defaultSlides: CTASlide[] = [
   {
     headline: "Need Immediate Assistance?",
-    subtext: "Our team is available 24/7 to help you with any service inquiry.",
+    subtext: "Our team is available Mon–Fri, 8am–5pm to help with any service inquiry.",
     ctaText: "Call Now",
     ctaLink: "tel:+17808097860",
     ctaType: "phone",
@@ -55,26 +56,28 @@ export function CTACarousel({
   slides = defaultSlides,
   autoplayInterval = 5000,
 }: CTACarouselProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % slides.length);
-    }, autoplayInterval);
-
-    return () => clearInterval(interval);
-  }, [slides.length, autoplayInterval]);
+  const {
+    index: currentIndex,
+    setIndex: setCurrentIndex,
+    pauseHandlers,
+  } = useAutoplay(slides.length, autoplayInterval);
 
   const currentSlide = slides[currentIndex];
+  if (!currentSlide) return null;
 
   return (
-    <section className="py-16 sm:py-20 lg:py-24 relative overflow-hidden">
+    <section
+      className="py-16 sm:py-20 lg:py-24 relative overflow-hidden"
+      aria-roledescription="carousel"
+      {...pauseHandlers}
+    >
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image
           src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&q=80"
           alt=""
           fill
+          sizes="100vw"
           className="object-cover"
         />
         {/* Dark blur overlay */}
@@ -84,7 +87,7 @@ export function CTACarousel({
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl mx-auto text-center">
           <AnimatePresence mode="wait">
-            <motion.div
+            <m.div
               key={currentIndex}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -123,22 +126,27 @@ export function CTACarousel({
                   </Button>
                 )}
               </div>
-            </motion.div>
+            </m.div>
           </AnimatePresence>
 
           {/* Indicators */}
-          <div className="flex justify-center gap-2 mt-12">
+          <div className="flex justify-center mt-12">
             {slides.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`h-1 rounded-full transition-all duration-300 ${
-                  index === currentIndex
-                    ? "w-8 bg-white"
-                    : "w-2 bg-white/40 hover:bg-white/60"
-                }`}
                 aria-label={`Go to slide ${index + 1}`}
-              />
+                aria-current={index === currentIndex ? "true" : undefined}
+                className="group p-2.5 flex items-center justify-center"
+              >
+                <span
+                  className={`block h-1 rounded-full transition-all duration-300 ${
+                    index === currentIndex
+                      ? "w-8 bg-white"
+                      : "w-2 bg-white/40 group-hover:bg-white/60"
+                  }`}
+                />
+              </button>
             ))}
           </div>
         </div>

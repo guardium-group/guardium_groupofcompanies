@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Barlow, Mulish, Geist_Mono } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { CookieConsent } from "@/components/cookie-consent";
 import { Header } from "@/components/layout/header";
@@ -9,9 +8,9 @@ import { MapSection } from "@/components/layout/map-section";
 import { PostHogProvider } from "@/components/posthog-provider";
 import { PostHogPageView } from "@/components/posthog-pageview";
 import { Suspense } from "react";
-import { SITE_URL, CONSENT_STORAGE_KEY, SERVICE_AREA_CITIES } from "@/lib/site-config";
+import { SITE_URL, SERVICE_AREA_CITIES } from "@/lib/site-config";
 import { companiesData, allCompanySlugs } from "@/lib/companies-data";
-import { GAPageView } from "@/components/ga-pageview";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 
 const barlow = Barlow({
   variable: "--font-barlow",
@@ -96,10 +95,10 @@ const organizationJsonLd = {
   email: "info@guardiumgroup.com",
   address: {
     "@type": "PostalAddress",
-    streetAddress: "Unit 206, 4918 Roper Rd NW",
+    streetAddress: "14360 Yellowhead Trail",
     addressLocality: "Edmonton",
     addressRegion: "AB",
-    postalCode: "T6B 3T7",
+    postalCode: "T5L 3C2",
     addressCountry: "CA",
   },
   geo: {
@@ -131,37 +130,22 @@ export default function RootLayout({
 
   return (
     <html lang="en-CA">
-      <script type="application/ld+json">
-        {JSON.stringify(organizationJsonLd)}
-      </script>
-      {gaId && (
-        <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-            strategy="afterInteractive"
-          />
-          <Script id="google-analytics" strategy="afterInteractive">
-            {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              var ggcConsent = typeof localStorage !== 'undefined' && localStorage.getItem('${CONSENT_STORAGE_KEY}') === 'accepted';
-              gtag('consent', 'default', {
-                analytics_storage: ggcConsent ? 'granted' : 'denied',
-                ad_storage: ggcConsent ? 'granted' : 'denied'
-              });
-              gtag('js', new Date());
-              gtag('config', '${gaId}', { send_page_view: false });
-            `}
-          </Script>
-        </>
-      )}
       <body
         className={`${barlow.variable} ${mulish.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Inside <body>: a <script> directly under <html> is invalid and
+            causes a hydration error. Search engines read JSON-LD anywhere. */}
+        <script
+          type="application/ld+json"
+          // Static data; "<" is escaped so the JSON can never close the tag.
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
         <PostHogProvider>
           <Suspense fallback={null}>
             <PostHogPageView />
-            {gaId && <GAPageView />}
+            {gaId && <GoogleAnalytics gaId={gaId} />}
           </Suspense>
           <CookieConsent />
           <Header />

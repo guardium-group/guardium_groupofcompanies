@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Phone,
-  Mail,
   MapPin,
   MessageSquare,
   Headphones,
@@ -16,6 +15,9 @@ import { motion } from "framer-motion";
 import { submitContact, getFormToken, type ContactSubmission } from "@/lib/actions/contact";
 import { serviceOptions } from "@/lib/validations/contact";
 import { BreadcrumbHero } from "@/components/breadcrumb-hero";
+import { Turnstile } from "@/components/ui/turnstile";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
@@ -63,25 +65,58 @@ export function ContactClient() {
   const [formToken, setFormToken] = useState("");
   const [formTimestamp, setFormTimestamp] = useState(0);
   const [honeypot, setHoneypot] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileReset, setTurnstileReset] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{
     type: "success" | "error" | null;
     message: string;
   }>({ type: null, message: "" });
 
-  useEffect(() => {
-    // Fetch a server-signed token on mount so the timing check can't be
-    // bypassed by a client-forged timestamp.
-    let cancelled = false;
-    getFormToken().then(({ token, timestamp }) => {
-      if (cancelled) return;
+  // Fetch a server-signed token so the timing check can't be bypassed by a
+  // client-forged timestamp. Returns false if the server couldn't be reached.
+  const refreshFormToken = useCallback(async (): Promise<boolean> => {
+    try {
+      const { token, timestamp } = await getFormToken();
       setFormToken(token);
       setFormTimestamp(timestamp);
-    });
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    getFormToken()
+      .then(({ token, timestamp }) => {
+        if (cancelled) return;
+        setFormToken(token);
+        setFormTimestamp(timestamp);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSubmitStatus({
+          type: "error",
+          message: "We couldn't load the contact form. Please refresh the page or call us at +1 780-809-7860.",
+        });
+      });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const handleTurnstileVerify = useCallback((token: string) => setTurnstileToken(token), []);
+  const handleTurnstileExpire = useCallback(() => setTurnstileToken(""), []);
+
+  // Turnstile tokens are single-use: get a fresh one after every attempt.
+  const resetTurnstile = () => {
+    setTurnstileToken("");
+    setTurnstileReset((n) => n + 1);
+  };
+
+  const needsTurnstile = TURNSTILE_SITE_KEY !== "";
+  const canSubmit = !isSubmitting && formToken !== "" && (!needsTurnstile || turnstileToken !== "");
 
   const handleServiceToggle = (service: string) => {
     setFormData((prev) => ({
@@ -94,6 +129,7 @@ export function ContactClient() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canSubmit) return;
     setIsSubmitting(true);
     setSubmitStatus({ type: null, message: "" });
 
@@ -103,6 +139,7 @@ export function ContactClient() {
         _honeypot: honeypot,
         _formToken: formToken,
         _timestamp: formTimestamp,
+        _turnstileToken: turnstileToken,
       };
 
       const result = await submitContact(submission);
@@ -111,19 +148,24 @@ export function ContactClient() {
         setSubmitStatus({ type: "success", message: result.message });
         setFormData({ name: "", email: "", message: "", services: [] });
         setHoneypot("");
-        // Fetch a new server-signed token for the next submission
-        const { token, timestamp } = await getFormToken();
-        setFormToken(token);
-        setFormTimestamp(timestamp);
+        // A token is single-use once a message is sent
+        await refreshFormToken();
       } else {
         setSubmitStatus({ type: "error", message: result.message });
+        // Expired, invalid or already-used token: get a new one so a retry
+        // can succeed without reloading the page.
+        if (result.code === "TOKEN_EXPIRED") {
+          await refreshFormToken();
+        }
       }
     } catch {
       setSubmitStatus({
         type: "error",
         message: "Something went wrong. Please try again.",
       });
+      await refreshFormToken();
     } finally {
+      resetTurnstile();
       setIsSubmitting(false);
     }
   };
@@ -292,10 +334,22 @@ export function ContactClient() {
                     </div>
                   )}
 
+                  {/* Bot protection */}
+                  {needsTurnstile && (
+                    <Turnstile
+                      siteKey={TURNSTILE_SITE_KEY}
+                      onVerify={handleTurnstileVerify}
+                      onExpire={handleTurnstileExpire}
+                      onError={handleTurnstileExpire}
+                      resetSignal={turnstileReset}
+                      className="min-h-[65px]"
+                    />
+                  )}
+
                   {/* Submit Button */}
                   <Button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={!canSubmit}
                     className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2.5 sm:py-3 rounded-lg font-medium transition-colors text-sm sm:text-base"
                   >
                     {isSubmitting ? (
@@ -313,7 +367,7 @@ export function ContactClient() {
               {/* Map */}
               <div className="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm h-64 sm:h-80 lg:h-auto lg:min-h-[500px] order-1 lg:order-2">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2370.8!2d-113.44!3d53.52!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2s4918+Roper+Rd+NW%2C+Edmonton%2C+AB+T6B3T7!5e0!3m2!1sen!2sca!4v1680000000000!5m2!1sen!2sca"
+                  src="https://maps.google.com/maps?q=14360+Yellowhead+Trail,+Edmonton,+AB+T5L+3C2&output=embed"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
@@ -370,7 +424,7 @@ export function ContactClient() {
                   )}
                   {card.actionType === "map" && (
                     <a
-                      href="https://maps.google.com/?q=Unit+206,+4918+Roper+Rd+NW,+Edmonton,+AB+T6B3T7"
+                      href="https://maps.google.com/?q=14360+Yellowhead+Trail,+Edmonton,+AB+T5L+3C2"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-block px-4 sm:px-6 py-2 sm:py-2.5 border border-blue-500 text-blue-500 rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-50 transition-colors"

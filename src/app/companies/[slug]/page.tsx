@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { companiesData, allCompanySlugs } from "@/lib/companies-data";
+import { allCompanySlugs, getCompany } from "@/lib/companies-data";
 import { SITE_URL } from "@/lib/site-config";
 import { CompanyClient } from "./company-client";
+
+// Only the known companies exist; any other slug is a 404.
+export const dynamicParams = false;
 
 export function generateStaticParams() {
   return allCompanySlugs.map((slug) => ({ slug }));
@@ -12,7 +15,7 @@ export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> },
 ): Promise<Metadata> {
   const { slug } = await params;
-  const company = companiesData[slug];
+  const company = getCompany(slug);
 
   if (!company) {
     return { title: "Company Not Found | Guardium Group" };
@@ -50,7 +53,7 @@ export default async function CompanyPage(
 ) {
   const { slug } = await params;
 
-  if (!companiesData[slug]) {
+  if (!getCompany(slug)) {
     notFound();
   }
 

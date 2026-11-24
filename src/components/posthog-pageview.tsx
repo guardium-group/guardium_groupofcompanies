@@ -10,7 +10,8 @@ export function PostHogPageView() {
   const posthog = usePostHog();
 
   useEffect(() => {
-    if (pathname && posthog) {
+    // PostHog is only initialised after cookie consent (see PostHogProvider).
+    if (pathname && posthog && posthog.__loaded) {
       let url = window.origin + pathname;
       const search = searchParams.toString();
       if (search) {

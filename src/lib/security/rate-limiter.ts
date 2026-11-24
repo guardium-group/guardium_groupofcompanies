@@ -1,12 +1,15 @@
 /**
- * In-memory rate limiter with sliding window algorithm
- * For production with multiple servers, replace with Redis-based solution
+ * In-memory fixed-window rate limiter.
+ *
+ * State lives in this process only: limits are per server instance and reset
+ * on restart. For multi-instance deployments, replace with a shared store
+ * (e.g. Redis/Upstash).
  */
 
 interface RateLimitEntry {
   count: number;
   firstRequest: number;
-  lastRequest: number;
+  expiresAt: number;
 }
 
 interface RateLimitConfig {
@@ -14,25 +17,44 @@ interface RateLimitConfig {
   maxRequests: number; // Max requests per window
 }
 
-// In-memory store (use Redis in production for distributed systems)
+// Hard cap so a flood of unique keys can't grow memory without bound.
+const MAX_ENTRIES = 10_000;
+
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-// Cleanup old entries every 5 minutes
-const CLEANUP_INTERVAL = 5 * 60 * 1000;
+const CLEANUP_INTERVAL = 60 * 1000;
 let lastCleanup = Date.now();
 
-function cleanup(windowMs: number): void {
-  const now = Date.now();
+function cleanup(now: number): void {
   if (now - lastCleanup < CLEANUP_INTERVAL) return;
-
   lastCleanup = now;
-  const cutoff = now - windowMs;
 
-  for (const [key, entry] of rateLimitStore.entries()) {
-    if (entry.lastRequest < cutoff) {
+  // Each entry carries its own expiry, so entries from different limiters
+  // (15-minute IP window, 1-hour email window, ...) are evicted correctly.
+  for (const [key, entry] of rateLimitStore) {
+    if (entry.expiresAt <= now) {
       rateLimitStore.delete(key);
     }
   }
+}
+
+function setEntry(identifier: string, entry: RateLimitEntry): void {
+  if (!rateLimitStore.has(identifier) && rateLimitStore.size >= MAX_ENTRIES) {
+    // Map iterates in insertion order, so the first key is the oldest.
+    const oldest = rateLimitStore.keys().next().value;
+    if (oldest !== undefined) rateLimitStore.delete(oldest);
+  }
+  rateLimitStore.set(identifier, entry);
+}
+
+function getLiveEntry(identifier: string, now: number): RateLimitEntry | undefined {
+  const entry = rateLimitStore.get(identifier);
+  if (!entry) return undefined;
+  if (entry.expiresAt <= now) {
+    rateLimitStore.delete(identifier);
+    return undefined;
+  }
+  return entry;
 }
 
 export interface RateLimitResult {
@@ -43,25 +65,23 @@ export interface RateLimitResult {
 }
 
 /**
- * Check if a request should be rate limited
+ * Count a request against the limit and report whether it is allowed.
  */
 export function checkRateLimit(
   identifier: string,
   config: RateLimitConfig
 ): RateLimitResult {
   const now = Date.now();
-  cleanup(config.windowMs);
+  cleanup(now);
 
-  const entry = rateLimitStore.get(identifier);
+  const entry = getLiveEntry(identifier, now);
 
   if (!entry) {
-    // First request from this identifier
-    rateLimitStore.set(identifier, {
+    setEntry(identifier, {
       count: 1,
       firstRequest: now,
-      lastRequest: now,
+      expiresAt: now + config.windowMs,
     });
-
     return {
       allowed: true,
       remaining: config.maxRequests - 1,
@@ -69,26 +89,9 @@ export function checkRateLimit(
     };
   }
 
-  const windowStart = now - config.windowMs;
+  const resetIn = entry.expiresAt - now;
 
-  // Reset if window has passed
-  if (entry.firstRequest < windowStart) {
-    rateLimitStore.set(identifier, {
-      count: 1,
-      firstRequest: now,
-      lastRequest: now,
-    });
-
-    return {
-      allowed: true,
-      remaining: config.maxRequests - 1,
-      resetIn: config.windowMs,
-    };
-  }
-
-  // Within window - check limit
   if (entry.count >= config.maxRequests) {
-    const resetIn = entry.firstRequest + config.windowMs - now;
     return {
       allowed: false,
       remaining: 0,
@@ -97,16 +100,21 @@ export function checkRateLimit(
     };
   }
 
-  // Increment counter
   entry.count++;
-  entry.lastRequest = now;
-  rateLimitStore.set(identifier, entry);
-
   return {
     allowed: true,
     remaining: config.maxRequests - entry.count,
-    resetIn: entry.firstRequest + config.windowMs - now,
+    resetIn,
   };
+}
+
+/**
+ * Report whether an identifier has already used up its limit, without
+ * counting this call against it.
+ */
+export function isRateLimited(identifier: string, config: RateLimitConfig): boolean {
+  const entry = getLiveEntry(identifier, Date.now());
+  return !!entry && entry.count >= config.maxRequests;
 }
 
 // Preset configurations
@@ -121,7 +129,7 @@ export const RATE_LIMITS = {
     windowMs: 60 * 60 * 1000,
     maxRequests: 3,
   },
-  // Very strict for suspected abuse: 1 per 30 minutes
+  // Sender flagged as spam: blocked for 30 minutes
   suspicious: {
     windowMs: 30 * 60 * 1000,
     maxRequests: 1,
@@ -129,7 +137,7 @@ export const RATE_LIMITS = {
 } as const;
 
 /**
- * Generate rate limit key for IP
+ * Generate rate limit key for an identifier
  */
 export function getRateLimitKey(type: string, identifier: string): string {
   return `${type}:${identifier}`;

@@ -34,8 +34,8 @@ function buildLlmsTxt(): string {
   lines.push("");
   lines.push("- Phone: +1 780-809-7860");
   lines.push("- Email: info@guardiumgroup.com");
-  lines.push("- Head office: Unit 206, 4918 Roper Rd NW, Edmonton, AB T6B 3T7, Canada");
-  lines.push("- Hours: standard business hours; individual subsidiaries may operate 24/7 (see below)");
+  lines.push("- Head office: 14360 Yellowhead Trail, Edmonton, AB T5L 3C2, Canada");
+  lines.push("- Hours: Mon–Fri 8am–5pm; individual subsidiaries may operate 24/7 (see below)");
   lines.push("");
 
   lines.push("## Subsidiary companies");

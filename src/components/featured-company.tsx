@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { motion } from "framer-motion";
+import * as m from "framer-motion/m";
 import { ArrowUpRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -47,7 +47,7 @@ export function FeaturedCompany({
             <div className="w-full lg:w-[45%] flex flex-col justify-center">
               {/* Section Label / Logo */}
               {logo ? (
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, y: 10 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -62,9 +62,9 @@ export function FeaturedCompany({
                     className="h-10 sm:h-12 w-auto"
                     style={{ width: "auto" }}
                   />
-                </motion.div>
+                </m.div>
               ) : (
-                <motion.p
+                <m.p
                   initial={{ opacity: 0, y: 10 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -72,11 +72,11 @@ export function FeaturedCompany({
                   className="bg-primary/10 text-primary font-semibold text-sm mb-3 rounded-full py-2 px-4 w-fit text-center"
                 >
                   {sectionLabel}
-                </motion.p>
+                </m.p>
               )}
 
               {/* Heading */}
-              <motion.h2
+              <m.h2
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -84,12 +84,12 @@ export function FeaturedCompany({
                 className="text-[28px] sm:text-[36px] lg:text-[42px] font-display font-bold text-gray-900 leading-[1.15] tracking-tight mb-8 lg:mb-10"
               >
                 {heading}
-              </motion.h2>
+              </m.h2>
 
               {/* Feature Cards */}
               <div className="space-y-3">
                 {features.slice(0, 3).map((feature, index) => (
-                  <motion.div
+                  <m.div
                     key={index}
                     initial={{ opacity: 0, x: -20 }}
                     whileInView={{ opacity: 1, x: 0 }}
@@ -108,13 +108,13 @@ export function FeaturedCompany({
                         {feature.description}
                       </p>
                     </div>
-                  </motion.div>
+                  </m.div>
                 ))}
               </div>
             </div>
 
             {/* Right Image */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0, scale: 0.98 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
@@ -127,13 +127,14 @@ export function FeaturedCompany({
                   src={backgroundImage}
                   alt={heading}
                   fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover"
                 />
               </div>
 
               {/* Floating Card */}
               <div className="absolute -bottom-4 right-4 sm:bottom-6 sm:right-6 lg:-bottom-6 lg:right-8 z-10">
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -147,7 +148,7 @@ export function FeaturedCompany({
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 bg-primary hover:bg-foreground text-white pl-4 pr-1.5 py-1.5 rounded-full text-sm font-medium transition-colors mb-3"
                   >
-                    Visit Website
+                    {ctaText}
                     <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
                       <ArrowUpRight className="w-3.5 h-3.5 text-primary" />
                     </span>
@@ -157,9 +158,9 @@ export function FeaturedCompany({
                   <p className="text-gray-500 text-[13px] leading-relaxed">
                     {tagline || description}
                   </p>
-                </motion.div>
+                </m.div>
               </div>
-            </motion.div>
+            </m.div>
 
           </div>
         </div>

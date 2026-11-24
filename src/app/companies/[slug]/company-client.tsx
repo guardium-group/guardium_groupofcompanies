@@ -69,7 +69,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { BreadcrumbHero } from "@/components/breadcrumb-hero";
-import { companiesData, allCompanySlugs } from "@/lib/companies-data";
+import { companiesData, allCompanySlugs, getCompany } from "@/lib/companies-data";
 import { SITE_URL, SERVICE_AREA_CITIES } from "@/lib/site-config";
 
 // Maps the `icon` string on each service in companies-data.ts to its lucide
@@ -137,7 +137,7 @@ const staggerContainer = {
 };
 
 export function CompanyClient({ slug }: { slug: string }) {
-  const company = companiesData[slug];
+  const company = getCompany(slug);
 
   if (!company) {
     notFound();
@@ -228,7 +228,7 @@ export function CompanyClient({ slug }: { slug: string }) {
             variants={staggerContainer}
             className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
           >
-            {company.services.map((service, index) => {
+            {company.services.map((service) => {
               const ServiceIcon = SERVICE_ICONS[service.icon] ?? Zap;
               return (
               <motion.div key={service.title} variants={fadeInUp}>
@@ -356,6 +356,7 @@ export function CompanyClient({ slug }: { slug: string }) {
                   src={company.heroImage}
                   alt={company.name}
                   fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -396,7 +397,7 @@ export function CompanyClient({ slug }: { slug: string }) {
               What Our Clients Say
             </h2>
             <p className="text-white/80 max-w-2xl mx-auto">
-              Don't just take our word for it. Here's what our customers have to say about working with us.
+              Don&apos;t just take our word for it. Here&apos;s what our customers have to say about working with us.
             </p>
           </motion.div>
 
@@ -418,7 +419,7 @@ export function CompanyClient({ slug }: { slug: string }) {
                     </div>
                     <Quote className="w-10 h-10 text-white/30 mb-4" />
                     <p className="text-white/90 mb-6 leading-relaxed">
-                      "{testimonial.text}"
+                      &ldquo;{testimonial.text}&rdquo;
                     </p>
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-semibold">
@@ -453,16 +454,16 @@ export function CompanyClient({ slug }: { slug: string }) {
                 Frequently Asked Questions
               </h2>
               <p className="text-gray-600 mb-8">
-                Have questions? We've got answers. If you don't see what you're looking for, feel free to contact us directly.
+                Have questions? We&apos;ve got answers. If you don&apos;t see what you&apos;re looking for, feel free to contact us directly.
               </p>
 
               <div className="bg-gray-50 rounded-2xl p-8">
                 <h3 className="font-semibold text-gray-900 mb-4">Still have questions?</h3>
                 <p className="text-gray-600 mb-6">
-                  Our team is here to help. Reach out and we'll get back to you as soon as possible.
+                  Our team is here to help. Reach out and we&apos;ll get back to you as soon as possible.
                 </p>
                 <div className="space-y-3">
-                  <a href={`tel:${company.phone}`} className="flex items-center gap-3 text-gray-700 hover:text-primary transition-colors">
+                  <a href={`tel:${company.phone.replace(/[^\d+]/g, "")}`} className="flex items-center gap-3 text-gray-700 hover:text-primary transition-colors">
                     <Phone className="w-5 h-5" />
                     {company.phone}
                   </a>
@@ -499,7 +500,7 @@ export function CompanyClient({ slug }: { slug: string }) {
       {/* CTA Section */}
       <section className="py-24 bg-gray-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
-          <Image src={company.heroImage} alt="" fill className="object-cover" />
+          <Image src={company.heroImage} alt="" fill sizes="100vw" className="object-cover" />
         </div>
         <div className="container mx-auto px-4 relative z-10">
           <motion.div
@@ -517,7 +518,7 @@ export function CompanyClient({ slug }: { slug: string }) {
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Button size="lg" className={`${company.color} hover:opacity-90 text-lg px-8`} asChild>
-                <a href={`tel:${company.phone}`}>
+                <a href={`tel:${company.phone.replace(/[^\d+]/g, "")}`}>
                   <Phone className="mr-2 h-5 w-5" />
                   {company.phone}
                 </a>
@@ -570,6 +571,7 @@ export function CompanyClient({ slug }: { slug: string }) {
                         src={related.image}
                         alt={related.name}
                         fill
+                        sizes="(max-width: 768px) 90vw, (max-width: 1024px) 45vw, 23vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -582,7 +584,7 @@ export function CompanyClient({ slug }: { slug: string }) {
                         {related.description}
                       </p>
                       <div className="mt-3 flex items-center text-primary text-sm font-medium group-hover:gap-2 transition-all">
-                        Learn More <ArrowRight className="w-4 h-4 ml-1" />
+                        Explore {related.name} <ArrowRight className="w-4 h-4 ml-1" />
                       </div>
                     </CardContent>
                   </Card>

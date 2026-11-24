@@ -465,4 +465,13 @@ export const companiesData: Record<string, CompanyData> = {
 
 // Get all company slugs for related companies section / static params
 export const allCompanySlugs = Object.keys(companiesData);
+
+/**
+ * Look up a company by an untrusted slug (e.g. from the URL). Uses an own-key
+ * check so inherited names like "constructor" or "__proto__" don't resolve to
+ * Object.prototype members.
+ */
+export function getCompany(slug: string): CompanyData | undefined {
+  return Object.hasOwn(companiesData, slug) ? companiesData[slug] : undefined;
+}
 export type CompanySlug = keyof typeof companiesData;

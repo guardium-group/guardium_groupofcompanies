@@ -16,17 +16,42 @@ const MAX_SUBMISSION_TIME = 30 * 60 * 1000; // 30 minutes
 // server restart, matching the existing rate-limiter's in-memory tradeoff.
 const FORM_TOKEN_SECRET = process.env.FORM_TOKEN_SECRET || randomBytes(32).toString("hex");
 
-function signTimestamp(timestamp: number): string {
-  return createHmac("sha256", FORM_TOKEN_SECRET).update(String(timestamp)).digest("hex");
+function sign(timestamp: number, nonce: string): string {
+  return createHmac("sha256", FORM_TOKEN_SECRET)
+    .update(`${timestamp}.${nonce}`)
+    .digest("hex");
 }
 
-// Suspicious patterns in text
+// Nonces of tokens that have already been used for a sent message, kept until
+// the token would have expired anyway. In-memory, like the rate limiter.
+const usedNonces = new Map<string, number>();
+const MAX_USED_NONCES = 10_000;
+
+function pruneUsedNonces(now: number): void {
+  for (const [nonce, expiresAt] of usedNonces) {
+    if (expiresAt <= now) usedNonces.delete(nonce);
+  }
+  while (usedNonces.size >= MAX_USED_NONCES) {
+    const oldest = usedNonces.keys().next().value;
+    if (oldest === undefined) break;
+    usedNonces.delete(oldest);
+  }
+}
+
+function parseToken(token: string): { nonce: string; signature: string } | null {
+  const [nonce, signature, extra] = token.split(".");
+  if (!nonce || !signature || extra !== undefined) return null;
+  return { nonce, signature };
+}
+
+// Suspicious patterns in text. No /g flag: these are reused with .test(),
+// and a global regex keeps lastIndex between calls and misses matches.
 const SPAM_PATTERNS = [
   /\b(viagra|cialis|casino|lottery|winner|congratulations)\b/i,
   /\b(click here|act now|limited time|free money)\b/i,
-  /(http|https):\/\/[^\s]+/g, // URLs in notes
-  /(.)\1{4,}/g, // Repeated characters (aaaaa)
-  /[A-Z]{10,}/g, // All caps sequences
+  /(http|https):\/\/[^\s]+/, // URLs in notes
+  /(.)\1{4,}/, // Repeated characters (aaaaa)
+  /[A-Z]{10,}/, // All caps sequences
 ];
 
 // Suspicious email patterns
@@ -64,29 +89,42 @@ export interface FormSecurityData {
  */
 export function generateFormToken(): { token: string; timestamp: number } {
   const timestamp = Date.now();
-  return { token: signTimestamp(timestamp), timestamp };
+  const nonce = randomBytes(16).toString("hex");
+  return { token: `${nonce}.${sign(timestamp, nonce)}`, timestamp };
 }
 
 /**
  * Validate form token and timing. Confirms the token is a valid signature
- * for the given timestamp (not just "present") before applying the timing
- * window checks.
+ * for the given timestamp (not just "present"), that it hasn't already been
+ * used to send a message, and that it falls inside the timing window.
  */
 export function validateFormTiming(
   token: string | undefined,
   timestamp: number | undefined
-): { valid: boolean; reason?: string } {
-  if (!token || !timestamp) {
-    return { valid: false, reason: "Missing security token" };
+): { valid: boolean; reason?: string; expired?: boolean } {
+  if (typeof token !== "string" || typeof timestamp !== "number" || !token || !timestamp) {
+    return { valid: false, reason: "Missing security token", expired: true };
   }
 
-  const expected = Buffer.from(signTimestamp(timestamp));
-  const actual = Buffer.from(token);
-  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
-    return { valid: false, reason: "Invalid security token" };
+  const parsed = parseToken(token);
+  const expected = parsed ? Buffer.from(sign(timestamp, parsed.nonce)) : null;
+  const actual = parsed ? Buffer.from(parsed.signature) : null;
+  if (
+    !parsed ||
+    !expected ||
+    !actual ||
+    expected.length !== actual.length ||
+    !timingSafeEqual(expected, actual)
+  ) {
+    return { valid: false, reason: "Invalid security token. Please refresh and try again.", expired: true };
   }
 
   const now = Date.now();
+  const usedUntil = usedNonces.get(parsed.nonce);
+  if (usedUntil !== undefined && usedUntil > now) {
+    return { valid: false, reason: "This form was already submitted. Please refresh and try again.", expired: true };
+  }
+
   const elapsed = now - timestamp;
 
   // Too fast - definitely a bot
@@ -96,10 +134,35 @@ export function validateFormTiming(
 
   // Token expired
   if (elapsed > MAX_SUBMISSION_TIME) {
-    return { valid: false, reason: "Form session expired" };
+    return { valid: false, reason: "Form session expired. Please try again.", expired: true };
   }
 
   return { valid: true };
+}
+
+/**
+ * Mark a validated form token as used so it can't send a second message.
+ * Call synchronously right before sending: Node runs it without interleaving,
+ * so two concurrent requests with the same token can't both pass.
+ * Returns false if the token was already used.
+ */
+export function consumeFormToken(token: string, timestamp: number): boolean {
+  const parsed = parseToken(token);
+  if (!parsed) return false;
+
+  const now = Date.now();
+  const usedUntil = usedNonces.get(parsed.nonce);
+  if (usedUntil !== undefined && usedUntil > now) return false;
+
+  pruneUsedNonces(now);
+  usedNonces.set(parsed.nonce, timestamp + MAX_SUBMISSION_TIME);
+  return true;
+}
+
+/** Undo consumeFormToken when sending failed, so the visitor can retry. */
+export function releaseFormToken(token: string): void {
+  const parsed = parseToken(token);
+  if (parsed) usedNonces.delete(parsed.nonce);
 }
 
 /**
@@ -207,19 +270,26 @@ export function performSpamCheck(data: {
 /**
  * Sanitize user input
  */
-export function sanitizeInput(input: string): string {
+export function sanitizeInput(input: string, options: { multiline?: boolean } = {}): string {
   if (!input) return "";
 
-  return input
-    .trim()
-    // Remove null bytes
-    .replace(/\0/g, "")
-    // Remove control characters except newlines
-    .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F]/g, "")
-    // Normalize whitespace
-    .replace(/\s+/g, " ")
-    // Limit length
-    .slice(0, 5000);
+  const cleaned = input
+    // Normalize line endings
+    .replace(/\r\n?/g, "\n")
+    // Remove control characters (including null bytes) except newlines
+    .replace(/[\x00-\x09\x0B-\x1F\x7F]/g, "");
+
+  const normalized = options.multiline
+    ? cleaned
+        // Collapse runs of spaces/tabs but keep line breaks
+        .replace(/[^\S\n]+/g, " ")
+        .replace(/ *\n */g, "\n")
+        // At most one blank line in a row
+        .replace(/\n{3,}/g, "\n\n")
+    : // Single-line fields (name, email, subject) must never contain newlines
+      cleaned.replace(/\s+/g, " ");
+
+  return normalized.trim().slice(0, 5000);
 }
 
 /**
@@ -239,13 +309,19 @@ export function escapeHtml(input: string): string {
 /**
  * Sanitize all form data
  */
+const MULTILINE_FIELDS = new Set(["message"]);
+
 export function sanitizeFormData<T extends object>(data: T): T {
   const sanitized = { ...data } as Record<string, unknown>;
 
   for (const key of Object.keys(sanitized)) {
     const value = sanitized[key];
     if (typeof value === "string") {
-      sanitized[key] = sanitizeInput(value);
+      sanitized[key] = sanitizeInput(value, { multiline: MULTILINE_FIELDS.has(key) });
+    } else if (Array.isArray(value)) {
+      sanitized[key] = value
+        .slice(0, 20)
+        .map((item) => (typeof item === "string" ? sanitizeInput(item) : item));
     }
   }
 
